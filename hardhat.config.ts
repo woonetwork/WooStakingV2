@@ -1,83 +1,145 @@
-import "@nomiclabs/hardhat-ethers";
+import type { HardhatUserConfig } from "hardhat/types";
+import { task } from "hardhat/config";
+
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
-import * as dotenv from "dotenv";
-import "hardhat-deploy";
+import "hardhat-abi-exporter";
 import "hardhat-gas-reporter";
-import { HardhatUserConfig, task } from "hardhat/config";
 import "solidity-coverage";
+import "dotenv/config";
 
-dotenv.config();
-
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
+task("accounts", "Prints the list of accounts", async (_args, hre) => {
   const accounts = await hre.ethers.getSigners();
-
-  for (const account of accounts) {
-    console.log(account.address);
-  }
+  accounts.forEach(async (account) => console.info(account.address));
 });
 
-function envVarSet(_str: string | undefined): _str is string {
-  return _str !== undefined && _str !== "";
-}
-
-const accounts =
-  process.env.PRIVATE_KEY !== undefined
-    ? [process.env.PRIVATE_KEY]
-    : [process.env.ADMIN_PRIVATE_KEY];
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
+const accounts = process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [];
 
 const config: HardhatUserConfig = {
-  solidity: {
-    version: "0.8.17",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-      },
-    },
-  },
-  namedAccounts: {
-    admin: {
-      default: 0,
-    },
-    user: {
-      default: 1,
-    },
-  },
+  defaultNetwork: "hardhat",
   networks: {
     hardhat: {
-      chainId: 1337, // https://hardhat.org/metamask-issue.html
-      tags: ["test"],
+      allowUnlimitedContractSize: false,
+      hardfork: "berlin", // Berlin is used (temporarily) to avoid issues with coverage
+      mining: {
+        auto: true,
+        interval: 50000,
+      },
+      gasPrice: "auto",
     },
-    ...(envVarSet(process.env.GOERLI_URL)
-      ? {
-          goerli: {
-            url: process.env.GOERLI_URL,
-            accounts,
-          },
-        }
-      : {}),
-    ...(envVarSet(process.env.GOERLI_URL)
-      ? {
-          arbitrum: {
-            url: process.env.ARBITRUM_URL,
-            accounts,
-          },
-        }
-      : {}),
-  },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
+    bsc_mainnet: {
+      url: "https://bsc-dataseed.binance.org/",
+      chainId: 56,
+      accounts: accounts,
+    },
+    bsc_testnet: {
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+      chainId: 97,
+      accounts: accounts,
+    },
+    avalanche_mainnet: {
+      url: "https://api.avax.network/ext/bc/C/rpc",
+      chainId: 43114,
+      accounts: accounts,
+    },
+    avalanche_testnet: {
+      url: "https://api.avax-test.network/ext/bc/C/rpc",
+      chainId: 43113,
+      accounts: accounts,
+    },
+    fantom_mainnet: {
+      url: "https://rpc.ftm.tools/",
+      chainId: 250,
+      accounts: accounts,
+    },
+    fantom_testnet: {
+      url: "https://rpc.testnet.fantom.network/",
+      chainId: 4002,
+      accounts: accounts,
+    },
+    polygon_mainnet: {
+      url: "https://polygon-rpc.com/",
+      chainId: 137,
+      accounts: accounts,
+    },
+    polygon_testnet: {
+      url: "https://matic-mumbai.chainstacklabs.com/",
+      chainId: 80001,
+      accounts: accounts,
+    },
+    arbitrum_mainnet: {
+      url: "https://arb1.arbitrum.io/rpc/",
+      chainId: 42161,
+      accounts: accounts,
+    },
+    arbitrum_testnet: {
+      url: "https://rinkeby.arbitrum.io/rpc/",
+      chainId: 421611,
+      accounts: accounts,
+    },
+    optimism_mainnet: {
+      url: "https://mainnet.optimism.io/",
+      chainId: 10,
+      accounts: accounts,
+    },
+    optimism_testnet: {
+      url: "https://goerli.optimism.io/",
+      chainId: 420,
+      accounts: accounts,
+    },
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_KEY,
+      // binance smart chain
+      bsc: process.env.BSCSCAN_KEY,
+      bscTestnet: process.env.BSCSCAN_KEY,
+      // avalanche
+      avalanche: process.env.SNOWTRACE_KEY,
+      avalancheFujiTestnet: process.env.SNOWTRACE_KEY,
+      // fantom mainnet
+      opera: process.env.FTMSCAN_KEY,
+      ftmTestnet: process.env.FTMSCAN_KEY,
+      // polygon
+      polygon: process.env.POLYGONSCAN_KEY,
+      polygonMumbai: process.env.POLYGONSCAN_KEY,
+      // arbitrum
+      arbitrumOne: process.env.ARBISCAN_KEY,
+      arbitrumTestnet: process.env.ARBISCAN_KEY,
+      // Optimistic
+      optimisticEthereum: process.env.OPTIMISTIC_ETHERSCAN_KEY,
+    },
+  },
+  solidity: {
+    compilers: [
+      {
+        version: "0.8.17",
+        settings: { optimizer: { enabled: true, runs: 20000 } },
+      },
+      {
+        version: "0.4.17",
+        settings: { optimizer: { enabled: true, runs: 999 } },
+      },
+    ],
+  },
+  paths: {
+    sources: "./contracts/",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
+  },
+  abiExporter: {
+    path: "./abis",
+    runOnCompile: true,
+    clear: true,
+    flat: true,
+    pretty: false,
+    except: ["test*"],
+  },
+  gasReporter: {
+    enabled: !!process.env.REPORT_GAS,
+    excludeContracts: ["test*"],
   },
 };
 

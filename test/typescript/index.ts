@@ -17,7 +17,7 @@ import {
   UranusNFT,
   NeptuneNFT,
   PlutoNFT,
-} from "../typechain";
+} from "../../typechain";
 import { fastForward, getTokenAmount, latestTime } from "./utils";
 
 let admin: Signer;
