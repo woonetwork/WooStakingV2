@@ -4,6 +4,7 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
+import "hardhat-deploy";
 import "hardhat-abi-exporter";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
@@ -18,6 +19,14 @@ const accounts = process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KE
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
+  namedAccounts: {
+    admin: {
+      default: 0,
+    },
+    user: {
+      default: 1,
+    },
+  },
   networks: {
     hardhat: {
       allowUnlimitedContractSize: false,
