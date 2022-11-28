@@ -26,8 +26,5 @@ interface IWooStakingNFT is IERC721 {
      * NFT with `tokenId`. The only requirement is the NFT with
      * `tokenId` must exist.
      */
-    function getEffect(uint256 tokenId)
-        external
-        view
-        returns (uint256 amount, uint256 duration);
+    function getEffect(uint256 tokenId) external view returns (uint256 amount, uint256 duration);
 }

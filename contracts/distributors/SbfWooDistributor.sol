@@ -9,11 +9,7 @@ import "../interfaces/IRewardDistributor.sol";
 import "../interfaces/IRewardTracker.sol";
 import "../dependencies/Governable.sol";
 
-contract SbfWooRewardDistributor is
-    IRewardDistributor,
-    ReentrancyGuard,
-    Governable
-{
+contract SbfWooRewardDistributor is IRewardDistributor, ReentrancyGuard, Governable {
     using SafeERC20 for IERC20;
 
     address public admin;
@@ -34,10 +30,7 @@ contract SbfWooRewardDistributor is
     }
 
     function distribute() external override returns (uint256) {
-        require(
-            _msgSender() == rewardTracker,
-            "RewardDistributor: invalid msg.sender"
-        );
+        require(_msgSender() == rewardTracker, "RewardDistributor: invalid msg.sender");
         uint256 amount = pendingRewards();
         if (amount == 0) {
             return 0;
@@ -57,11 +50,7 @@ contract SbfWooRewardDistributor is
     }
 
     // to help users who accidentally send their tokens to this contract
-    function withdrawToken(
-        address _token,
-        address _account,
-        uint256 _amount
-    ) external onlyGov {
+    function withdrawToken(address _token, address _account, uint256 _amount) external onlyGov {
         IERC20(_token).safeTransfer(_account, _amount);
     }
 
@@ -77,10 +66,7 @@ contract SbfWooRewardDistributor is
     }
 
     function setTokensPerInterval(uint256 _amount) external onlyAdmin {
-        require(
-            lastDistributionTime != 0,
-            "RewardDistributor: invalid lastDistributionTime"
-        );
+        require(lastDistributionTime != 0, "RewardDistributor: invalid lastDistributionTime");
         IRewardTracker(rewardTracker).updateRewards();
         tokensPerInterval = _amount;
         emit TokensPerIntervalChange(_amount);

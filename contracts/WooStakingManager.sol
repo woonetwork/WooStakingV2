@@ -41,33 +41,17 @@ contract WooStakingManager is IWooStakingManager, Ownable {
         _consume(tokenId, nft);
     }
 
-    function _addBoostingEffects(
-        address account,
-        uint256 amount,
-        uint256 duration
-    ) private {
-        IBonusTracker(bnTokenRewardTracker).updateBoostingInfo(
-            account,
-            amount,
-            block.timestamp + duration
-        );
+    function _addBoostingEffects(address account, uint256 amount, uint256 duration) private {
+        IBonusTracker(bnTokenRewardTracker).updateBoostingInfo(account, amount, block.timestamp + duration);
 
         emit BoostingEffectsUpdated(account, amount, duration);
     }
 
-    function _ownerOf(uint256 tokenId, address nft)
-        private
-        view
-        returns (address)
-    {
+    function _ownerOf(uint256 tokenId, address nft) private view returns (address) {
         return IWooStakingNFT(nft).ownerOf(tokenId);
     }
 
-    function _retrieveNFTEffects(uint256 tokenId, address nft)
-        private
-        view
-        returns (uint256, uint256)
-    {
+    function _retrieveNFTEffects(uint256 tokenId, address nft) private view returns (uint256, uint256) {
         return IWooStakingNFT(nft).getEffect(tokenId);
     }
 

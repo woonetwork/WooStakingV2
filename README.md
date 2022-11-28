@@ -11,10 +11,10 @@
 ## WOOFi Woo Staking V2.0
 
 This repository contains the smart contracts and solidity library for the WOOFi staking:
+
 - Supports the $woo token staking, and provide benefits for long term user
 - Escrowed Woo (esWOO) can be staked for rewards similar to regular WOO tokens; or vested to become actual WOO tokens over a period of time
 - Stake and consume the specific NFTs to boost the vesting benefits
-
 
 ## Security
 
