@@ -15,8 +15,7 @@ contract PlutoNFT is ERC721, ReentrancyGuard, IWooStakingNFT, Ownable {
     uint256 public constant MAX_SUPPLY = 10000;
     uint256 public constant MINTING_FEE = 0.01 ether;
     uint256 public constant BASE_BOOSTING_MULTIPLIER = 1e6;
-    uint256 public constant BOOSTING_AMOUNT =
-        (3 * BASE_BOOSTING_MULTIPLIER) / 2; // 150%
+    uint256 public constant BOOSTING_AMOUNT = (3 * BASE_BOOSTING_MULTIPLIER) / 2; // 150%
     uint256 public constant BOOSTING_DURATION = 2419200; // 1 month
     address public stakingManager;
 
@@ -54,11 +53,7 @@ contract PlutoNFT is ERC721, ReentrancyGuard, IWooStakingNFT, Ownable {
         _burn(_tokenId);
     }
 
-    function getEffect(uint256 tokenId)
-        public
-        view
-        returns (uint256 amount, uint256 duration)
-    {
+    function getEffect(uint256 tokenId) public view returns (uint256 amount, uint256 duration) {
         if (_exists(tokenId)) {
             amount = BOOSTING_AMOUNT;
             duration = BOOSTING_DURATION;

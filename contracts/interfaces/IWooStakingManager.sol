@@ -7,11 +7,7 @@ interface IWooStakingManager {
      * @dev Emitted when `account` has new boosting effects with `amount`
      * and `duration by consuming NFTs.
      */
-    event BoostingEffectsUpdated(
-        address account,
-        uint256 amount,
-        uint256 duration
-    );
+    event BoostingEffectsUpdated(address account, uint256 amount, uint256 duration);
 
     /**
      * @dev Emitted when a new `nft` contract is added.

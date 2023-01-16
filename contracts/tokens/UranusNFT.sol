@@ -15,8 +15,7 @@ contract UranusNFT is ERC721, ReentrancyGuard, IWooStakingNFT, Ownable {
     uint256 public constant MAX_SUPPLY = 10000;
     uint256 public constant MINTING_FEE = 0.01 ether;
     uint256 public constant BASE_BOOSTING_MULTIPLIER = 1e6;
-    uint256 public constant BOOSTING_AMOUNT =
-        (12 * BASE_BOOSTING_MULTIPLIER) / 10; // 120%
+    uint256 public constant BOOSTING_AMOUNT = (12 * BASE_BOOSTING_MULTIPLIER) / 10; // 120%
     uint256 public constant BOOSTING_DURATION = 7257600; // 3 months
     address public stakingManager;
 
@@ -54,11 +53,7 @@ contract UranusNFT is ERC721, ReentrancyGuard, IWooStakingNFT, Ownable {
         _burn(_tokenId);
     }
 
-    function getEffect(uint256 tokenId)
-        public
-        view
-        returns (uint256 amount, uint256 duration)
-    {
+    function getEffect(uint256 tokenId) public view returns (uint256 amount, uint256 duration) {
         if (_exists(tokenId)) {
             amount = BOOSTING_AMOUNT;
             duration = BOOSTING_DURATION;

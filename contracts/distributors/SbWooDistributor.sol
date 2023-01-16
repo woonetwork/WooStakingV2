@@ -9,11 +9,7 @@ import "../interfaces/IBonusDistributor.sol";
 import "../interfaces/IRewardTracker.sol";
 import "../dependencies/Governable.sol";
 
-contract SbWooBonusDistributor is
-    IBonusDistributor,
-    ReentrancyGuard,
-    Governable
-{
+contract SbWooBonusDistributor is IBonusDistributor, ReentrancyGuard, Governable {
     using SafeERC20 for IERC20;
 
     uint256 public constant BASIS_POINTS_DIVISOR = 10000;
@@ -38,10 +34,7 @@ contract SbWooBonusDistributor is
     }
 
     function distribute() external override returns (uint256) {
-        require(
-            _msgSender() == rewardTracker,
-            "BonusDistributor: invalid msg.sender"
-        );
+        require(_msgSender() == rewardTracker, "BonusDistributor: invalid msg.sender");
         uint256 amount = pendingRewards();
         if (amount == 0) {
             return 0;
@@ -61,10 +54,7 @@ contract SbWooBonusDistributor is
     }
 
     function boostReward(uint256 amount) external override {
-        require(
-            _msgSender() == rewardTracker,
-            "BonusDistributor: invalid msg.sender"
-        );
+        require(_msgSender() == rewardTracker, "BonusDistributor: invalid msg.sender");
 
         if (amount == 0) {
             return;
@@ -73,11 +63,7 @@ contract SbWooBonusDistributor is
     }
 
     // to help users who accidentally send their tokens to this contract
-    function withdrawToken(
-        address _token,
-        address _account,
-        uint256 _amount
-    ) external onlyGov {
+    function withdrawToken(address _token, address _account, uint256 _amount) external onlyGov {
         IERC20(_token).safeTransfer(_account, _amount);
     }
 
@@ -92,14 +78,8 @@ contract SbWooBonusDistributor is
         emit AdminSet(admin);
     }
 
-    function setBonusMultiplier(uint256 _bonusMultiplierBasisPoints)
-        external
-        onlyAdmin
-    {
-        require(
-            lastDistributionTime != 0,
-            "BonusDistributor: invalid lastDistributionTime"
-        );
+    function setBonusMultiplier(uint256 _bonusMultiplierBasisPoints) external onlyAdmin {
+        require(lastDistributionTime != 0, "BonusDistributor: invalid lastDistributionTime");
         IRewardTracker(rewardTracker).updateRewards();
         bonusMultiplierBasisPoints = _bonusMultiplierBasisPoints;
         emit BonusMultiplierChange(_bonusMultiplierBasisPoints);
@@ -109,9 +89,6 @@ contract SbWooBonusDistributor is
         uint256 timeDiff = block.timestamp - lastDistributionTime;
         uint256 supply = IERC20(rewardTracker).totalSupply();
 
-        return
-            (timeDiff * supply * bonusMultiplierBasisPoints) /
-            BASIS_POINTS_DIVISOR /
-            BONUS_DURATION;
+        return (timeDiff * supply * bonusMultiplierBasisPoints) / BASIS_POINTS_DIVISOR / BONUS_DURATION;
     }
 }

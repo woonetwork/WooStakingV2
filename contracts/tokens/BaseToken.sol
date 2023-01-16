@@ -36,11 +36,7 @@ contract BaseToken is Context, IERC20, IBaseToken {
         _;
     }
 
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint256 _initialSupply
-    ) {
+    constructor(string memory _name, string memory _symbol, uint256 _initialSupply) {
         name = _name;
         symbol = _symbol;
         gov = _msgSender();
@@ -56,19 +52,11 @@ contract BaseToken is Context, IERC20, IBaseToken {
     }
 
     // to help users who accidentally send their tokens to this contract
-    function withdrawToken(
-        address _token,
-        address _account,
-        uint256 _amount
-    ) external override onlyGov {
+    function withdrawToken(address _token, address _account, uint256 _amount) external override onlyGov {
         IERC20(_token).safeTransfer(_account, _amount);
     }
 
-    function setInPrivateTransferMode(bool _inPrivateTransferMode)
-        external
-        override
-        onlyGov
-    {
+    function setInPrivateTransferMode(bool _inPrivateTransferMode) external override onlyGov {
         inPrivateTransferMode = _inPrivateTransferMode;
     }
 
@@ -77,10 +65,7 @@ contract BaseToken is Context, IERC20, IBaseToken {
     }
 
     function addNonStakingAccount(address _account) external onlyAdmin {
-        require(
-            !nonStakingAccounts[_account],
-            "BaseToken: _account already marked"
-        );
+        require(!nonStakingAccounts[_account], "BaseToken: _account already marked");
         nonStakingAccounts[_account] = true;
         nonStakingSupply += balances[_account];
     }
@@ -95,59 +80,32 @@ contract BaseToken is Context, IERC20, IBaseToken {
         return totalSupply - nonStakingSupply;
     }
 
-    function balanceOf(address _account)
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function balanceOf(address _account) external view override returns (uint256) {
         return balances[_account];
     }
 
-    function stakedBalance(address _account)
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function stakedBalance(address _account) external view override returns (uint256) {
         if (nonStakingAccounts[_account]) {
             return 0;
         }
         return balances[_account];
     }
 
-    function transfer(address _recipient, uint256 _amount)
-        external
-        override
-        returns (bool)
-    {
+    function transfer(address _recipient, uint256 _amount) external override returns (bool) {
         _transfer(_msgSender(), _recipient, _amount);
         return true;
     }
 
-    function allowance(address _owner, address _spender)
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function allowance(address _owner, address _spender) external view override returns (uint256) {
         return allowances[_owner][_spender];
     }
 
-    function approve(address _spender, uint256 _amount)
-        external
-        override
-        returns (bool)
-    {
+    function approve(address _spender, uint256 _amount) external override returns (bool) {
         _approve(_msgSender(), _spender, _amount);
         return true;
     }
 
-    function transferFrom(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    ) external override returns (bool) {
+    function transferFrom(address _sender, address _recipient, uint256 _amount) external override returns (bool) {
         address account = _msgSender();
         if (isHandler[account]) {
             _transfer(_sender, _recipient, _amount);
@@ -174,10 +132,7 @@ contract BaseToken is Context, IERC20, IBaseToken {
     }
 
     function _burn(address _account, uint256 _amount) internal {
-        require(
-            _account != address(0),
-            "BaseToken: burn from the zero address"
-        );
+        require(_account != address(0), "BaseToken: burn from the zero address");
 
         balances[_account] -= _amount;
         totalSupply -= _amount;
@@ -189,25 +144,12 @@ contract BaseToken is Context, IERC20, IBaseToken {
         emit Transfer(_account, address(0), _amount);
     }
 
-    function _transfer(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    ) private {
-        require(
-            _sender != address(0),
-            "BaseToken: transfer from the zero address"
-        );
-        require(
-            _recipient != address(0),
-            "BaseToken: transfer to the zero address"
-        );
+    function _transfer(address _sender, address _recipient, uint256 _amount) private {
+        require(_sender != address(0), "BaseToken: transfer from the zero address");
+        require(_recipient != address(0), "BaseToken: transfer to the zero address");
 
         if (inPrivateTransferMode) {
-            require(
-                isHandler[_msgSender()],
-                "BaseToken: msg.sender not whitelisted"
-            );
+            require(isHandler[_msgSender()], "BaseToken: msg.sender not whitelisted");
         }
 
         balances[_sender] -= _amount;
@@ -223,19 +165,9 @@ contract BaseToken is Context, IERC20, IBaseToken {
         emit Transfer(_sender, _recipient, _amount);
     }
 
-    function _approve(
-        address _owner,
-        address _spender,
-        uint256 _amount
-    ) private {
-        require(
-            _owner != address(0),
-            "BaseToken: approve from the zero address"
-        );
-        require(
-            _spender != address(0),
-            "BaseToken: approve to the zero address"
-        );
+    function _approve(address _owner, address _spender, uint256 _amount) private {
+        require(_owner != address(0), "BaseToken: approve from the zero address");
+        require(_spender != address(0), "BaseToken: approve to the zero address");
         allowances[_owner][_spender] = _amount;
         emit Approval(_owner, _spender, _amount);
     }

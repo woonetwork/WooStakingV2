@@ -1,10 +1,52 @@
-# Advanced Sample Hardhat Project
+<p align="center"><img src="https://files.gitbook.com/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F-McghiWP3H5y-b9oQ6H6-887967055%2Fuploads%2FMaPxIQMWO8RcUv6vMK1n%2Flogo2.png?alt=media&token=e51ef4bd-664e-4356-9e38-fdfa12baf27d" width="320" /></p>
+<div align="center">
+  <a href="https://github.com/woonetwork/WooStakingV2/actions/workflows/checks.yaml" style="text-decoration:none;">
+    <img src="https://github.com/woonetwork/WooStakingV2/actions/workflows/checks.yaml/badge.svg" alt='Build & Build' />
+  </a>
+  <a href='https://github.com/woonetwork/WooStakingV2/actions/workflows/tests.yaml' style="text-decoration:none;">
+    <img src='https://github.com/woonetwork/WooStakingV2/actions/workflows/tests.yaml/badge.svg' alt='Unit Tests' />
+  </a>
+</div>
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
+## WOOFi Woo Staking V2.0
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
+This repository contains the smart contracts and solidity library for the WOOFi staking:
 
-Try running some of the following tasks:
+- Supports the $woo token staking, and provide benefits for long term user
+- Escrowed Woo (esWOO) can be staked for rewards similar to regular WOO tokens; or vested to become actual WOO tokens over a period of time
+- Stake and consume the specific NFTs to boost the vesting benefits
+
+## Security
+
+#### Bug Bounty
+
+Bug bounty for the smart contracts: [Bug Bounty](https://learn.woo.org/woofi/woofi-swap/bug-bounty).
+
+#### Security Audit
+
+3rd party security audit: [Audit Report](https://learn.woo.org/woofi/woofi-swap/audits).
+
+### Code Structure
+
+It is a hybrid [Hardhat](https://hardhat.org/) repo that also requires [Foundry](https://book.getfoundry.sh/index.html) to run Solidity tests powered by the [ds-test library](https://github.com/dapphub/ds-test/).
+
+> To install Foundry, please follow the instructions [here](https://book.getfoundry.sh/getting-started/installation.html).
+
+### Run tests
+
+- TypeScript tests are included in the `typescript` folder in the `test` folder at the root of the repo.
+- Solidity tests are included in the `foundry` folder in the `test` folder at the root of the repo.
+
+### Example of Foundry/Forge commands
+
+```shell
+forge build
+forge test
+forge test -vv
+forge tree
+```
+
+### Example of Hardhat commands
 
 ```shell
 npx hardhat accounts
@@ -24,23 +66,3 @@ npx prettier '**/*.{json,sol,md}' --write
 npx solhint 'contracts/**/*.sol'
 npx solhint 'contracts/**/*.sol' --fix
 ```
-
-# Etherscan verification
-
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
-
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
-
-```shell
-hardhat run --network ropsten scripts/deploy.ts
-```
-
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
-
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
-```
-
-# Performance optimizations
-
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).

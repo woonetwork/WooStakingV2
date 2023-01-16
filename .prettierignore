@@ -3,3 +3,9 @@ artifacts
 cache
 coverage*
 gasReporterOutput.json
+typechain
+lib*
+test
+
+*.js
+*.ts
