@@ -35,7 +35,6 @@ contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
     }
 
     constructor(address _endpoint, address _rewardRouter) NonblockingLzApp(_endpoint) {
-        transferOwnership(msg.sender);
         rewardRouter = IRewardRouter(_rewardRouter);
     }
 

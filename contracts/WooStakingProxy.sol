@@ -35,12 +35,16 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
         _;
     }
 
-    constructor(address _endpoint, uint16 _chainId, address _controller, address _want) NonblockingLzApp(_endpoint) {
-        transferOwnership(msg.sender);
+    constructor(
+        address _endpoint,
+        uint16 _controllerChainId,
+        address _controller,
+        address _want
+    ) NonblockingLzApp(_endpoint) {
         require(_controller != address(0), "WooStakingProxy: invalid controller address");
         require(_want != address(0), "WooStakingProxy: invalid staking token address");
 
-        controllerChainId = _chainId;
+        controllerChainId = _controllerChainId;
         controller = _controller;
         want = IERC20(_want);
 
