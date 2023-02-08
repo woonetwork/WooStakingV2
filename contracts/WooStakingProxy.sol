@@ -14,10 +14,10 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint8 public constant ACTION_STAKE = 1;
-    uint8 public constant ACTION_WITHDRAW = 2;
+    uint8 public constant ACTION_UNSTAKE = 2;
     uint8 public constant ACTION_COMPOUND = 3;
 
-    uint16 public controllerChainId = 112; // Fantom for test
+    uint16 public controllerChainId;
     address public controller;
     IERC20 public immutable want;
 
@@ -45,7 +45,7 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
         want = IERC20(_want);
 
         actionToDstGas[ACTION_STAKE] = 200000;
-        actionToDstGas[ACTION_WITHDRAW] = 200000;
+        actionToDstGas[ACTION_UNSTAKE] = 200000;
         actionToDstGas[ACTION_COMPOUND] = 200000;
     }
 
@@ -64,20 +64,20 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
         _sendMessage(user, ACTION_STAKE, _amount);
     }
 
-    function withdraw(uint256 _amount) external payable whenNotPaused nonReentrant {
-        _withdraw(msg.sender, _amount);
+    function unstake(uint256 _amount) external payable whenNotPaused nonReentrant {
+        _unstake(msg.sender, _amount);
     }
 
-    function withdrawAll() external payable whenNotPaused nonReentrant {
-        _withdraw(msg.sender, balances[msg.sender]);
+    function unstakeAll() external payable whenNotPaused nonReentrant {
+        _unstake(msg.sender, balances[msg.sender]);
     }
 
-    function _withdraw(address user, uint256 _amount) private {
+    function _unstake(address user, uint256 _amount) private {
         require(balances[user] >= _amount, "WooStakingProxy: !BALANCE");
         balances[user] -= _amount;
         want.safeTransfer(user, _amount);
         emit WithdrawOnProxy(user, _amount);
-        _sendMessage(user, ACTION_WITHDRAW, _amount);
+        _sendMessage(user, ACTION_UNSTAKE, _amount);
     }
 
     function compound() external payable whenNotPaused nonReentrant {

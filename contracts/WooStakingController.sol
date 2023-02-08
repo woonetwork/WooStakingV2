@@ -16,7 +16,7 @@ contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint8 public constant ACTION_STAKE = 1;
-    uint8 public constant ACTION_WITHDRAW = 2;
+    uint8 public constant ACTION_UNSTAKE = 2;
     uint8 public constant ACTION_COMPOUND = 3;
 
     IRewardRouter public rewardRouter;
@@ -50,7 +50,7 @@ contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
         (address user, uint8 action, uint256 amount) = abi.decode(_payload, (address, uint8, uint256));
         if (action == ACTION_STAKE) {
             _stake(user, amount);
-        } else if (action == ACTION_WITHDRAW) {
+        } else if (action == ACTION_UNSTAKE) {
             _withdraw(user, amount);
         } else if (action == ACTION_COMPOUND) {
             _compound(user);
