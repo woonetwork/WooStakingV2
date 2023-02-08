@@ -81,6 +81,10 @@ contract RewardRouter is IRewardRouter, ReentrancyGuard, Governable {
         _unstakeToken(_msgSender(), token, _amount, true);
     }
 
+    function unstakeTokenForAccount(address _user, uint256 _amount) external nonReentrant {
+        _unstakeToken(_user, token, _amount, true);
+    }
+
     function instantUnstakeToken(uint256 _amount) external nonReentrant {
         _unstakeToken(_msgSender(), token, _amount, false);
     }

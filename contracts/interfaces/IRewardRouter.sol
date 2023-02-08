@@ -16,9 +16,6 @@ interface IRewardRouter {
         address _feeTokenTracker
     ) external;
 
-    // to help users who accidentally send their tokens to this contract
-    function withdrawToken(address _token, address _account, uint256 _amount) external;
-
     function batchStakeTokenForAccount(address[] memory _accounts, uint256[] memory _amounts) external;
 
     function stakeTokenForAccount(address _account, uint256 _amount) external;
@@ -26,6 +23,8 @@ interface IRewardRouter {
     function stakeToken(uint256 _amount) external;
 
     function unstakeToken(uint256 _amount) external;
+
+    function unstakeTokenForAccount(address _account, uint256 _amount) external;
 
     function claim() external;
 
