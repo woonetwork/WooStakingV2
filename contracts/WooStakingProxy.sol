@@ -17,7 +17,7 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
     uint8 public constant ACTION_WITHDRAW = 2;
     uint8 public constant ACTION_COMPOUND = 3;
 
-    uint16 public controllerChainId = 12;
+    uint16 public controllerChainId = 112; // Fantom for test
     address public controller;
     IERC20 public immutable want;
 
@@ -35,17 +35,18 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
         _;
     }
 
-    constructor(address _endpoint, address _controller, address _want) NonblockingLzApp(_endpoint) {
+    constructor(address _endpoint, uint16 _chainId, address _controller, address _want) NonblockingLzApp(_endpoint) {
         transferOwnership(msg.sender);
         require(_controller != address(0), "WooStakingProxy: invalid controller address");
         require(_want != address(0), "WooStakingProxy: invalid staking token address");
 
+        controllerChainId = _chainId;
         controller = _controller;
         want = IERC20(_want);
 
-        actionToDstGas[ACTION_STAKE] = 280000;
-        actionToDstGas[ACTION_WITHDRAW] = 360000;
-        actionToDstGas[ACTION_COMPOUND] = 160000;
+        actionToDstGas[ACTION_STAKE] = 200000;
+        actionToDstGas[ACTION_WITHDRAW] = 200000;
+        actionToDstGas[ACTION_COMPOUND] = 200000;
     }
 
     function estimateFees(uint8 _action, uint256 _amount) public view returns (uint256 messageFee) {
@@ -92,11 +93,6 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
 
         bytes memory payload = abi.encode(user, _action, _amount);
         bytes memory adapterParams = abi.encodePacked(uint16(2), actionToDstGas[_action], uint256(0), address(0x0));
-
-        // TODO: confirmed this require is unnecessary
-        // get the fees we need to pay to LayerZero for message delivery
-        // (uint256 messageFee, ) = lzEndpoint.estimateFees(controllerChainId, controller, payload, false, adapterParams);
-        // require(msg.value >= messageFee, "WooStakingProxy: msg.value < messageFee");
 
         _lzSend(
             controllerChainId, // destination chainId
@@ -146,9 +142,7 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
         if (stuckToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             TransferHelper.safeTransferETH(msg.sender, address(this).balance);
         } else {
-            // TODO: remove me when releasing to prod
-            // require(stuckToken != want, "WooStakingProxy: !want");
-
+            require(stuckToken != address(want), "WooStakingProxy: !want");
             uint256 amount = IERC20(stuckToken).balanceOf(address(this));
             TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
         }
