@@ -5,30 +5,27 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol";
 
+import "./interfaces/IWooStakingProxy.sol";
+
 import "./util/TransferHelper.sol";
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
-contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
+contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    uint8 public constant ACTION_STAKE = 1;
-    uint8 public constant ACTION_UNSTAKE = 2;
-    uint8 public constant ACTION_COMPOUND = 3;
+    uint8 public constant override ACTION_STAKE = 1;
+    uint8 public constant override ACTION_UNSTAKE = 2;
+    uint8 public constant override ACTION_COMPOUND = 3;
 
-    uint16 public controllerChainId;
-    address public controller;
-    IERC20 public immutable want;
+    uint16 public override controllerChainId;
+    address public override controller;
+    IERC20 public immutable override want;
 
-    mapping(uint8 => uint256) public actionToDstGas;
-    mapping(address => uint256) public balances;
-    mapping(address => bool) public isAdmin;
-
-    event StakeOnProxy(address indexed user, uint256 amount);
-    event WithdrawOnProxy(address indexed user, uint256 amount);
-    event CompoundOnProxy(address indexed user);
-    event AdminUpdated(address indexed addr, bool flag);
+    mapping(uint8 => uint256) public override actionToDstGas;
+    mapping(address => uint256) public override balances;
+    mapping(address => bool) public override isAdmin;
 
     modifier onlyAdmin() {
         require(msg.sender == owner() || isAdmin[msg.sender], "WooStakingProxy: !admin");
@@ -53,13 +50,13 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
         actionToDstGas[ACTION_COMPOUND] = 200000;
     }
 
-    function estimateFees(uint8 _action, uint256 _amount) public view returns (uint256 messageFee) {
+    function estimateFees(uint8 _action, uint256 _amount) public view override returns (uint256 messageFee) {
         bytes memory payload = abi.encode(msg.sender, _action, _amount);
         bytes memory adapterParams = abi.encodePacked(uint16(2), actionToDstGas[_action], uint256(0), address(0x0));
         (messageFee, ) = lzEndpoint.estimateFees(controllerChainId, controller, payload, false, adapterParams);
     }
 
-    function stake(uint256 _amount) external payable whenNotPaused nonReentrant {
+    function stake(uint256 _amount) external payable override whenNotPaused nonReentrant {
         address user = msg.sender;
         want.safeTransferFrom(user, address(this), _amount);
         balances[user] += _amount;
@@ -68,11 +65,11 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
         _sendMessage(user, ACTION_STAKE, _amount);
     }
 
-    function unstake(uint256 _amount) external payable whenNotPaused nonReentrant {
+    function unstake(uint256 _amount) external payable override whenNotPaused nonReentrant {
         _unstake(msg.sender, _amount);
     }
 
-    function unstakeAll() external payable whenNotPaused nonReentrant {
+    function unstakeAll() external payable override whenNotPaused nonReentrant {
         _unstake(msg.sender, balances[msg.sender]);
     }
 
@@ -84,7 +81,7 @@ contract WooStakingProxy is NonblockingLzApp, Pausable, ReentrancyGuard {
         _sendMessage(user, ACTION_UNSTAKE, _amount);
     }
 
-    function compound() external payable whenNotPaused nonReentrant {
+    function compound() external payable override whenNotPaused nonReentrant {
         address user = msg.sender;
         emit CompoundOnProxy(user);
         _sendMessage(user, ACTION_COMPOUND, 0);
