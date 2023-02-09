@@ -15,17 +15,17 @@ import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    uint8 public constant override ACTION_STAKE = 1;
-    uint8 public constant override ACTION_UNSTAKE = 2;
-    uint8 public constant override ACTION_COMPOUND = 3;
+    uint8 public constant ACTION_STAKE = 1;
+    uint8 public constant ACTION_UNSTAKE = 2;
+    uint8 public constant ACTION_COMPOUND = 3;
 
     uint16 public override controllerChainId;
     address public override controller;
     IERC20 public immutable override want;
 
-    mapping(uint8 => uint256) public override actionToDstGas;
+    mapping(uint8 => uint256) public actionToDstGas;
     mapping(address => uint256) public override balances;
-    mapping(address => bool) public override isAdmin;
+    mapping(address => bool) public isAdmin;
 
     modifier onlyAdmin() {
         require(msg.sender == owner() || isAdmin[msg.sender], "WooStakingProxy: !admin");

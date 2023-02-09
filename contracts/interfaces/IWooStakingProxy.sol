@@ -17,23 +17,13 @@ interface IWooStakingProxy {
 
     /* ----- State Variables ----- */
 
-    function ACTION_STAKE() external view returns (uint8);
-
-    function ACTION_UNSTAKE() external view returns (uint8);
-
-    function ACTION_COMPOUND() external view returns (uint8);
-
     function controllerChainId() external view returns (uint16);
 
     function controller() external view returns (address);
 
     function want() external view returns (IERC20);
 
-    function actionToDstGas(uint8 action) external view returns (uint256 dstGas);
-
     function balances(address user) external view returns (uint256 balance);
-
-    function isAdmin(address user) external view returns (bool flag);
 
     /* ----- Functions ----- */
 
