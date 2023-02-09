@@ -31,6 +31,8 @@ interface IWooStakingProxy {
 
     function stake(uint256 _amount) external payable;
 
+    function stake(address _user, uint256 _amount) external payable;
+
     function unstake(uint256 _amount) external payable;
 
     function unstakeAll() external payable;

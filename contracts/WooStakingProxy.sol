@@ -57,12 +57,19 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, Pausable, Reentr
     }
 
     function stake(uint256 _amount) external payable override whenNotPaused nonReentrant {
-        address user = msg.sender;
-        want.safeTransferFrom(user, address(this), _amount);
-        balances[user] += _amount;
+        _stake(msg.sender, _amount);
+    }
 
-        emit StakeOnProxy(user, _amount);
-        _sendMessage(user, ACTION_STAKE, _amount);
+    function stake(address _user, uint256 _amount) external payable override whenNotPaused nonReentrant {
+        _stake(_user, _amount);
+    }
+
+    function _stake(address _user, uint256 _amount) private {
+        want.safeTransferFrom(_user, address(this), _amount);
+        balances[_user] += _amount;
+
+        emit StakeOnProxy(_user, _amount);
+        _sendMessage(_user, ACTION_STAKE, _amount);
     }
 
     function unstake(uint256 _amount) external payable override whenNotPaused nonReentrant {

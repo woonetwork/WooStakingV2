@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol";
 
-import "./interfaces/IRewardRouter.sol";
+import "./interfaces/IWooStakingManager.sol";
 import "./util/TransferHelper.sol";
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -19,7 +19,7 @@ contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
     uint8 public constant ACTION_UNSTAKE = 2;
     uint8 public constant ACTION_COMPOUND = 3;
 
-    IRewardRouter public rewardRouter;
+    IWooStakingManager public stakingManager;
 
     mapping(address => uint256) public balances;
     mapping(address => bool) public isAdmin;
@@ -34,8 +34,8 @@ contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
         _;
     }
 
-    constructor(address _endpoint, address _rewardRouter) NonblockingLzApp(_endpoint) {
-        rewardRouter = IRewardRouter(_rewardRouter);
+    constructor(address _endpoint, address _stakingManager) NonblockingLzApp(_endpoint) {
+        stakingManager = IWooStakingManager(_stakingManager);
     }
 
     // --------------------- LZ Receive Message Functions --------------------- //
@@ -61,19 +61,19 @@ contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
     // --------------------- Business Logic Functions --------------------- //
 
     function _stake(address _user, uint256 _amount) private {
-        rewardRouter.stakeTokenForAccount(_user, _amount);
+        stakingManager.stakeWoo(_user, _amount);
         balances[_user] += _amount;
         emit StakeOnController(_user, _amount);
     }
 
     function _withdraw(address _user, uint256 _amount) private {
         balances[_user] -= _amount;
-        rewardRouter.unstakeTokenForAccount(_user, _amount);
+        stakingManager.unstakeWoo(_user, _amount);
         emit WithdrawOnController(_user, _amount);
     }
 
     function _compound(address _user) private {
-        rewardRouter.compoundForAccount(_user);
+        stakingManager.compoundAll(_user);
         emit CompoundOnController(_user);
     }
 
@@ -92,8 +92,8 @@ contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
         emit AdminUpdated(addr, flag);
     }
 
-    function setRewardRouter(address _router) external onlyAdmin {
-        rewardRouter = IRewardRouter(_router);
+    function setStakingManager(address _manager) external onlyAdmin {
+        stakingManager = IWooStakingManager(_manager);
     }
 
     function syncBalance(address _user, uint256 _balance) external onlyAdmin {
