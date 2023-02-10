@@ -19,11 +19,13 @@ interface IWooStakingManager {
 
     function unstakeMP(address _user, uint256 _amount) external;
 
-    function mpBalances(address _user) external view returns (uint256);
+    function mpBalance(address _user) external view returns (uint256);
 
-    function wooBalances(address _user) external view returns (uint256);
+    function wooBalance(address _user) external view returns (uint256);
 
-    function totalBalances(address _user) external view returns (uint256);
+    function totalBalance(address _user) external view returns (uint256);
+
+    function totalBalance() external view returns (uint256);
 
     function compoundMP(address _user) external;
 
