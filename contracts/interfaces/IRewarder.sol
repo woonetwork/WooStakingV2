@@ -16,4 +16,8 @@ interface IRewarder {
     function stakingManager() external returns (IWooStakingManager);
 
     function setStakingManager(address _manager) external;
+
+    function updateReward() external;
+
+    function updateRewardForUser(address _user) external;
 }

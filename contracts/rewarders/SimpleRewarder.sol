@@ -18,6 +18,7 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     mapping(address => uint256) public rewardDebt;
+    mapping(address => uint256) public RewardAccum;
 
     uint256 public accTokenPerShare;
 
@@ -35,8 +36,8 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
     function pendingReward(address _user) external returns (uint256 rewardAmount) {
         uint256 totalBalance = stakingManager.totalBalance();
 
-        if (block.number > pool.lastRewardBlock && totalBalance != 0) {
-            uint256 rewards = (block.number - pool.lastRewardBlock) * rewardPerBlock;
+        if (block.number > lastRewardBlock && totalBalance != 0) {
+            uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
             accTokenPerShare += (rewards * 1e18) / totalBalance;
             lastRewardBlock = block.number;
         }
@@ -45,17 +46,17 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
     }
 
     function claim(address _user) external returns (uint256 rewardAmount) {
-        _claim(_user, _user); // TODO: double check the _user is the receiver address
+        rewardAmount = _claim(_user, _user); // TODO: double check the _user is the receiver address
     }
 
     function claim(address _user, address _to) external returns (uint256 rewardAmount) {
-        _claim(_user, _to);
+        rewardAmount = _claim(_user, _to);
     }
 
-    function _claim(address _user, address _to) private {
+    function _claim(address _user, address _to) private returns (uint256 rewardAmount) {
         updateReward();
 
-        uint256 rewardAmount = (stakingManager.totalBalance(_user) * accTokenPerShare) / 1e18 - rewardDebt[_user];
+        rewardAmount = (stakingManager.totalBalance(_user) * accTokenPerShare) / 1e18 - rewardDebt[_user];
 
         rewardDebt[_user] += rewardAmount;
 
@@ -81,7 +82,20 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
         }
     }
 
-    function _stakedAmount(address _user) private {
-        return stakingManager.totalBalances(_user);
+    // TODO: settle the user's rewards
+    function updateRewardForUser(address _user) public {
+        if (block.number <= lastRewardBlock) {
+            return;
+        }
+
+        // shadow harvest for _user
+        RewardAccum[_user] = uint256(100); // TODO: finish it
+
+        uint256 totalBalance = stakingManager.totalBalance();
+        if (totalBalance > 0) {
+            uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
+            accTokenPerShare += (rewards * 1e18) / totalBalance;
+            lastRewardBlock = block.number;
+        }
     }
 }

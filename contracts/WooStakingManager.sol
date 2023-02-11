@@ -110,20 +110,20 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
     }
 
     function stakeWoo(address _user, uint256 _amount) public onlyController {
-        mpRewarder.updateReward();
+        mpRewarder.updateRewardForUser(_user);
 
         // TODO: update other rewarders' reward
 
-        wooBalances[_user] += _amount;
+        wooBalance[_user] += _amount;
         wooTotalBalance += _amount;
     }
 
     function unstakeWoo(address _user, uint256 _amount) external onlyController {
-        mpRewarder.updateReward();
+        mpRewarder.updateRewardForUser(_user);
 
         // TODO: update other rewarders' reward
 
-        wooBalances[_user] -= _amount;
+        wooBalance[_user] -= _amount;
         wooTotalBalance -= _amount;
     }
 
@@ -131,18 +131,18 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
         if (msg.sender != address(this)) {
             TransferHelper.safeTransferFrom(mp, msg.sender, address(this), _amount);
         }
-        mpBalances[_user] += _amount;
+        mpBalance[_user] += _amount;
     }
 
     function unstakeMP(address _user, uint256 _amount) external onlyController {
-        mpBalances[_user] -= _amount;
+        mpBalance[_user] -= _amount;
 
         // TODO: burn MP?
     }
 
     // 权重: have a better name
     function totalBalance(address _user) external view returns (uint256) {
-        return wooBalances[_user] + mpBalances[_user];
+        return wooBalance[_user] + mpBalance[_user];
     }
 
     function totalBalance() external view returns (uint256) {
@@ -192,7 +192,7 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
         uint256 amount = mpRewarder.claim(_user, address(this));
 
         // NO need to transfer MP token to self again
-        mpBalances[_user] += amount;
+        mpBalance[_user] += amount;
     }
 
     function compoundRewards(address _user) public onlyController {
