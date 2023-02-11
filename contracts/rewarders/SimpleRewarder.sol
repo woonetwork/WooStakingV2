@@ -28,9 +28,13 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
     uint256 public rewardPerBlock; // emission rate of reward
     uint256 public lastRewardBlock; // last distribution block
 
-    constructor(address _rewardToken, address _stakingManager) {
+    // constructor(address _rewardToken, address _stakingManager) {
+    //     rewardToken = _rewardToken;
+    //     stakingManager = IWooStakingManager(_stakingManager);
+    // }
+
+    constructor(address _rewardToken) {
         rewardToken = _rewardToken;
-        stakingManager = IWooStakingManager(_stakingManager);
     }
 
     function pendingReward(address _user) external returns (uint256 rewardAmount) {
