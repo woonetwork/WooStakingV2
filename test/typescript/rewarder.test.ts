@@ -38,6 +38,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { SimpleRewarder, WooStakingManager } from "../../typechain";
 import SimpleRewarderArtifact from "../../artifacts/contracts/rewarders/SimpleRewarder.sol/SimpleRewarder.json";
 import WooStakingManagerArtifact  from "../../artifacts/contracts/WooStakingManager.sol/WooStakingManager.json";
+import TestStakingManagerArtifact from "../../artifacts/contracts/test/TestStakingManager.sol/TestStakingManager.json";
 
 describe("SimpleRewarder tests", () => {
     let owner: SignerWithAddress;
@@ -49,11 +50,11 @@ describe("SimpleRewarder tests", () => {
         const signers = await ethers.getSigners();
         owner = signers[0];
         baseToken = signers[1];
-        // stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [])) as WooStakingManager;
-        rewarder = (await deployContract(owner, SimpleRewarderArtifact, [baseToken.address])) as SimpleRewarder;
+        stakingManager = (await deployContract(owner, TestStakingManagerArtifact, [baseToken.address, baseToken.address])) as WooStakingManager;
+        rewarder = (await deployContract(owner, SimpleRewarderArtifact, [baseToken.address, stakingManager.address])) as SimpleRewarder;
     });
     it("Init with correct owner", async () => {
         expect(await rewarder.owner()).to.eq(owner.address);
-        // expect(await stakingManager.owner()).to.eq(owner.address);
+        expect(await stakingManager.owner()).to.eq(owner.address);
     });
 });
