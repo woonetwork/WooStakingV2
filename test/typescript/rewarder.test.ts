@@ -34,7 +34,7 @@ import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
 import { deployContract, deployMockContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-const { mine } = require("@nomicfoundation/hardhat-network-helpers");
+const { mine, time } = require("@nomicfoundation/hardhat-network-helpers");
 
 import { SimpleRewarder, WooStakingManager } from "../../typechain";
 import SimpleRewarderArtifact from "../../artifacts/contracts/rewarders/SimpleRewarder.sol/SimpleRewarder.json";
@@ -61,6 +61,7 @@ describe("SimpleRewarder tests", () => {
         await stakingManager.mock["totalBalance()"].withArgs().returns(100);
 
         rewarder = (await deployContract(owner, SimpleRewarderArtifact, [baseToken.address, stakingManager.address])) as SimpleRewarder;
+        await rewarder.setRewardPerBlock(20);
     });
     it("Init with correct owner", async () => {
         expect(await rewarder.owner()).to.eq(owner.address);
@@ -76,17 +77,21 @@ describe("SimpleRewarder tests", () => {
         let poolTotal = await stakingManager["totalBalance()"]();
         expect(poolTotal).to.eq(100);
 
-        let [block1, accShare1] = await rewarder.state();
+        // let [block1, accShare1] = await rewarder.state();
+        let accShare1 = await rewarder.accTokenPerShare();
+        let block1 = await rewarder.lastRewardBlock();
+        console.log("The current block number is", await time.latestBlock());
         console.log("block: " + block1 + ", accshare: " + accShare1);
         await mine(10);
+        console.log("The current block number is", await time.latestBlock());
 
-        await rewarder.setRewardPerBlock(20);
         await rewarder.updateReward();
+        let accShare2 = await rewarder.accTokenPerShare();
+        let block2 = await rewarder.lastRewardBlock();
+        console.log("block: " + block2 + ", accshare: " + accShare2);
+
         let reward = await rewarder.pendingReward(user.address);
 
         console.log("reward: ", reward.toNumber());
-
-        let [block2, accShare2] = await rewarder.state();
-        console.log("block: " + block2 + ", accshare: " + accShare2);
     });
 });
