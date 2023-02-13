@@ -33,16 +33,16 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
         stakingManager = IWooStakingManager(_stakingManager);
     }
 
-    function pendingReward(address _user) external returns (uint256 rewardAmount) {
+    function pendingReward(address _user) external view override returns (uint256 rewardAmount) {
         uint256 totalBalance = stakingManager.totalBalance();
 
+        uint256 accNew = accTokenPerShare;
         if (block.number > lastRewardBlock && totalBalance != 0) {
             uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
-            accTokenPerShare += (rewards * 1e18) / totalBalance;
-            lastRewardBlock = block.number;
+            accNew += (rewards * 1e18) / totalBalance;
         }
 
-        rewardAmount = (stakingManager.totalBalance(_user) * accTokenPerShare) / 1e18 - rewardDebt[_user];
+        rewardAmount = (stakingManager.userBalance(_user) * accNew) / 1e18 - rewardDebt[_user];
     }
 
     function claim(address _user) external returns (uint256 rewardAmount) {
@@ -56,7 +56,7 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
     function _claim(address _user, address _to) private returns (uint256 rewardAmount) {
         updateReward();
 
-        rewardAmount = (stakingManager.totalBalance(_user) * accTokenPerShare) / 1e18 - rewardDebt[_user];
+        rewardAmount = (stakingManager.userBalance(_user) * accTokenPerShare) / 1e18 - rewardDebt[_user];
 
         rewardDebt[_user] += rewardAmount;
 
@@ -65,6 +65,10 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
 
     function setStakingManager(address _manager) external onlyOwner {
         stakingManager = IWooStakingManager(_manager);
+    }
+
+    function setRewardPerBlock(uint256 _amount) external onlyOwner {
+        rewardPerBlock = _amount;
     }
 
     // clear and settle the reward
@@ -80,6 +84,11 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
             accTokenPerShare += (rewards * 1e18) / totalBalance;
             lastRewardBlock = block.number;
         }
+    }
+
+    function state() external view returns (uint256 _lastRewardBlock, uint256 _accTokenPerShare) {
+        _lastRewardBlock = lastRewardBlock;
+        _accTokenPerShare = accTokenPerShare;
     }
 
     // TODO: settle the user's rewards

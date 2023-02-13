@@ -33,6 +33,7 @@
   "devDependencies": {
     "@commitlint/cli": "^16.2.3",
     "@commitlint/config-conventional": "^16.2.1",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-etherscan": "^3.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
@@ -70,7 +71,6 @@
     "typescript": "^4.5.2"
   },
   "dependencies": {
-    "@layerzerolabs/solidity-examples": "^0.0.7",
-    "@openzeppelin/contracts": "^4.7.3"
+    "@layerzerolabs/solidity-examples": "^0.0.7"
   }
 }

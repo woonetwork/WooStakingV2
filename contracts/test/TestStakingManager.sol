@@ -20,11 +20,14 @@ contract TestStakingManager is IWooStakingManager, Ownable, Pausable, Reentrancy
     }
 
     // 权重: have a better name
-    function totalBalance(address _user) external view returns (uint256) {
+    function userBalance(address _user) external view returns (uint256) {
         return wooBalance[_user] + mpBalance[_user];
     }
 
-    function stakeWoo(address _user, uint256 _amount) public  {}
+    function stakeWoo(address _user, uint256 _amount) public  {
+        wooBalance[_user] += _amount;
+        wooTotalBalance += _amount;
+    }
 
     function unstakeWoo(address _user, uint256 _amount) external {}
 
