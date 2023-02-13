@@ -141,7 +141,7 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
     }
 
     // 权重: have a better name
-    function userBalance(address _user) external view returns (uint256) {
+    function totalBalance(address _user) external view returns (uint256) {
         return wooBalance[_user] + mpBalance[_user];
     }
 

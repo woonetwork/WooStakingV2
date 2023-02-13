@@ -42,7 +42,7 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
             accNew += (rewards * 1e18) / totalBalance;
         }
 
-        rewardAmount = (stakingManager.userBalance(_user) * accNew) / 1e18 - rewardDebt[_user];
+        rewardAmount = (stakingManager.totalBalance(_user) * accNew) / 1e18 - rewardDebt[_user];
     }
 
     function claim(address _user) external returns (uint256 rewardAmount) {
@@ -56,7 +56,7 @@ contract SimpleRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
     function _claim(address _user, address _to) private returns (uint256 rewardAmount) {
         updateReward();
 
-        rewardAmount = (stakingManager.userBalance(_user) * accTokenPerShare) / 1e18 - rewardDebt[_user];
+        rewardAmount = (stakingManager.totalBalance(_user) * accTokenPerShare) / 1e18 - rewardDebt[_user];
 
         rewardDebt[_user] += rewardAmount;
 

@@ -23,7 +23,7 @@ interface IWooStakingManager {
 
     function wooBalance(address _user) external view returns (uint256);
 
-    function userBalance(address _user) external view returns (uint256);
+    function totalBalance(address _user) external view returns (uint256);
 
     function totalBalance() external view returns (uint256);
 

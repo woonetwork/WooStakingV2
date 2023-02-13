@@ -30,15 +30,15 @@
 */
 
 import { expect } from "chai";
-import { BigNumber } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
-import { deployContract } from "ethereum-waffle";
+import { deployContract, deployMockContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 const { mine } = require("@nomicfoundation/hardhat-network-helpers");
 
 import { SimpleRewarder, WooStakingManager } from "../../typechain";
 import SimpleRewarderArtifact from "../../artifacts/contracts/rewarders/SimpleRewarder.sol/SimpleRewarder.json";
-import TestStakingManagerArtifact from "../../artifacts/contracts/test/TestStakingManager.sol/TestStakingManager.json";
+import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManager.sol/WooStakingManager.json";
 
 
 describe("SimpleRewarder tests", () => {
@@ -46,14 +46,20 @@ describe("SimpleRewarder tests", () => {
     let baseToken: SignerWithAddress;
 
     let rewarder: SimpleRewarder;
-    let stakingManager: WooStakingManager;
+    let stakingManager: Contract;
     let user: SignerWithAddress;
     beforeEach(async () => {
         const signers = await ethers.getSigners();
         owner = signers[0];
         baseToken = signers[1];
         user = signers[2];
-        stakingManager = (await deployContract(owner, TestStakingManagerArtifact, [baseToken.address, baseToken.address])) as WooStakingManager;
+        stakingManager = await deployMockContract(owner, WooStakingManagerArtifact.abi);
+        await stakingManager.mock.owner.returns(owner.address);
+        await stakingManager.mock.wooBalance.withArgs(user.address).returns(10);
+        await stakingManager.mock.stakeWoo.returns();
+        await stakingManager.mock["totalBalance(address)"].withArgs(user.address).returns(20);
+        await stakingManager.mock["totalBalance()"].withArgs().returns(100);
+
         rewarder = (await deployContract(owner, SimpleRewarderArtifact, [baseToken.address, stakingManager.address])) as SimpleRewarder;
     });
     it("Init with correct owner", async () => {
@@ -65,8 +71,10 @@ describe("SimpleRewarder tests", () => {
         await stakingManager.stakeWoo(user.address, 10);
         let amount = await stakingManager.wooBalance(user.address);
         expect(amount).to.eq(10);
-        let total = await stakingManager.userBalance(user.address);
-        expect(total).to.eq(10);
+        let total = await stakingManager["totalBalance(address)"](user.address);
+        expect(total).to.eq(20);
+        let poolTotal = await stakingManager["totalBalance()"]();
+        expect(poolTotal).to.eq(100);
 
         let [block1, accShare1] = await rewarder.state();
         console.log("block: " + block1 + ", accshare: " + accShare1);
