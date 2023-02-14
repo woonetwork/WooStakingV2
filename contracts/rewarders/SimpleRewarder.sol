@@ -13,4 +13,12 @@ contract SimpleRewarder is BaseRewarder {
     function weight(address _user) public view override returns (uint256) {
         return stakingManager.totalBalance(_user);
     }
+
+    function _claim(address _user, address _to) internal override returns (uint256 rewardAmount) {
+        updateRewardForUser(_user);
+        rewardAmount = rewardClaimable[_user];
+        TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
+        totalRewardClaimable -= rewardAmount;
+        rewardClaimable[_user] = 0;
+    }
 }

@@ -21,9 +21,16 @@ contract MpRewarder is BaseRewarder {
     }
 
     function weight(address _user) public view override returns (uint256) {
+        // TODO: weight(user) is legic to be greater than total weight;
+        // double check it works on reward claim!
         return stakingManager.wooBalance(_user) * booster.boostRatio(_user);
     }
 
-    // TODO: weight(user) is legic to be greater than total weight;
-    // double check it works on reward claim!
+    function _claim(address _user, address _to) internal override returns (uint256 rewardAmount) {
+        require(address(stakingManager) == _to, "RESTRICTED_TO_STAKING_MANAGER");
+        updateRewardForUser(_user);
+        rewardAmount = rewardClaimable[_user];
+        rewardClaimable[_user] = 0;
+        totalRewardClaimable -= rewardAmount;
+    }
 }
