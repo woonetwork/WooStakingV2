@@ -7,13 +7,13 @@ import "./IWooStakingManager.sol";
 interface IRewarder {
     function rewardToken() external view returns (address);
 
+    function stakingManager() external view returns (IWooStakingManager);
+
     function pendingReward(address _user) external view returns (uint256 rewardAmount);
 
     function claim(address _user) external returns (uint256 rewardAmount);
 
     function claim(address _user, address _to) external returns (uint256 rewardAmount);
-
-    function stakingManager() external returns (IWooStakingManager);
 
     function setStakingManager(address _manager) external;
 

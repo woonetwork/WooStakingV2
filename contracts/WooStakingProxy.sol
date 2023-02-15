@@ -1,18 +1,48 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol";
+/*
 
-import "./interfaces/IWooStakingProxy.sol";
+░██╗░░░░░░░██╗░█████╗░░█████╗░░░░░░░███████╗██╗
+░██║░░██╗░░██║██╔══██╗██╔══██╗░░░░░░██╔════╝██║
+░╚██╗████╗██╔╝██║░░██║██║░░██║█████╗█████╗░░██║
+░░████╔═████║░██║░░██║██║░░██║╚════╝██╔══╝░░██║
+░░╚██╔╝░╚██╔╝░╚█████╔╝╚█████╔╝░░░░░░██║░░░░░██║
+░░░╚═╝░░░╚═╝░░░╚════╝░░╚════╝░░░░░░░╚═╝░░░░░╚═╝
 
-import "./util/TransferHelper.sol";
+*
+* MIT License
+* ===========
+*
+* Copyright (c) 2020 WooTrade
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {NonblockingLzApp} from "@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol";
 
-contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, Pausable, ReentrancyGuard {
+import {IWooStakingProxy} from "./interfaces/IWooStakingProxy.sol";
+import {BaseAdminOperation} from "./BaseAdminOperation.sol";
+import {TransferHelper} from "./util/TransferHelper.sol";
+
+contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperation, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint8 public constant ACTION_STAKE = 1;
@@ -25,12 +55,6 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, Pausable, Reentr
 
     mapping(uint8 => uint256) public actionToDstGas;
     mapping(address => uint256) public override balances;
-    mapping(address => bool) public isAdmin;
-
-    modifier onlyAdmin() {
-        require(msg.sender == owner() || isAdmin[msg.sender], "WooStakingProxy: !admin");
-        _;
-    }
 
     constructor(
         address _endpoint,
@@ -121,19 +145,6 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, Pausable, Reentr
 
     // --------------------- Admin Functions --------------------- //
 
-    function pause() public onlyAdmin {
-        super._pause();
-    }
-
-    function unpause() public onlyAdmin {
-        super._unpause();
-    }
-
-    function setAdmin(address addr, bool flag) external onlyAdmin {
-        isAdmin[addr] = flag;
-        emit AdminUpdated(addr, flag);
-    }
-
     function setController(address _controller) external onlyAdmin {
         controller = _controller;
     }
@@ -144,16 +155,6 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, Pausable, Reentr
 
     function setGasForAction(uint8 _action, uint256 _gas) public onlyAdmin {
         actionToDstGas[_action] = _gas;
-    }
-
-    function inCaseTokenGotStuck(address stuckToken) external onlyOwner {
-        if (stuckToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            TransferHelper.safeTransferETH(msg.sender, address(this).balance);
-        } else {
-            require(stuckToken != address(want), "WooStakingProxy: !want");
-            uint256 amount = IERC20(stuckToken).balanceOf(address(this));
-            TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
-        }
     }
 
     receive() external payable {}

@@ -34,25 +34,41 @@ pragma solidity ^0.8.4;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import {BaseRewarder} from "./BaseRewarder.sol";
-import {TransferHelper} from "../util/TransferHelper.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 
-contract SimpleRewarder is BaseRewarder {
-    constructor(address _rewardToken, address _stakingManager) BaseRewarder(_rewardToken, _stakingManager) {}
+import {TransferHelper} from "./util/TransferHelper.sol";
 
-    function totalWeight() public view override returns (uint256) {
-        return stakingManager.totalBalance();
+abstract contract BaseAdminOperation is Pausable, Ownable {
+    event AdminUpdated(address indexed addr, bool flag);
+
+    mapping(address => bool) public isAdmin;
+
+    modifier onlyAdmin() {
+        require(_msgSender() == owner() || isAdmin[_msgSender()], "BaseAdminOperation: !admin");
+        _;
     }
 
-    function weight(address _user) public view override returns (uint256) {
-        return stakingManager.totalBalance(_user);
+    function pause() public onlyAdmin {
+        _pause();
     }
 
-    function _claim(address _user, address _to) internal override returns (uint256 rewardAmount) {
-        updateRewardForUser(_user);
-        rewardAmount = rewardClaimable[_user];
-        TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
-        totalRewardClaimable -= rewardAmount;
-        rewardClaimable[_user] = 0;
+    function unpause() public onlyAdmin {
+        _unpause();
+    }
+
+    function setAdmin(address addr, bool flag) external onlyAdmin {
+        isAdmin[addr] = flag;
+        emit AdminUpdated(addr, flag);
+    }
+
+    function inCaseTokenGotStuck(address stuckToken) external onlyOwner {
+        if (stuckToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            TransferHelper.safeTransferETH(_msgSender(), address(this).balance);
+        } else {
+            uint256 amount = IERC20(stuckToken).balanceOf(address(this));
+            TransferHelper.safeTransfer(stuckToken, _msgSender(), amount);
+        }
     }
 }

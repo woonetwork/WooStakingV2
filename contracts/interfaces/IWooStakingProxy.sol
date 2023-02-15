@@ -13,8 +13,6 @@ interface IWooStakingProxy {
 
     event CompoundOnProxy(address indexed user);
 
-    event AdminUpdated(address indexed addr, bool flag);
-
     /* ----- State Variables ----- */
 
     function controllerChainId() external view returns (uint16);
