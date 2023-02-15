@@ -8,13 +8,7 @@ import "../interfaces/IRewardBooster.sol";
 contract MpRewarder is BaseRewarder {
     IRewardBooster public booster;
 
-    constructor(
-        address _rewardToken,
-        address _stakingManager,
-        address _booster
-    ) BaseRewarder(_rewardToken, _stakingManager) {
-        booster = IRewardBooster(_booster);
-    }
+    constructor(address _rewardToken, address _stakingManager) BaseRewarder(_rewardToken, _stakingManager) {}
 
     function totalWeight() public view override returns (uint256) {
         return stakingManager.wooTotalBalance();
@@ -23,7 +17,10 @@ contract MpRewarder is BaseRewarder {
     function weight(address _user) public view override returns (uint256) {
         // TODO: weight(user) is legic to be greater than total weight;
         // double check it works on reward claim!
-        return stakingManager.wooBalance(_user) * booster.boostRatio(_user);
+
+        uint256 ratio = booster.boostRatio(_user);
+        uint256 wooBal = stakingManager.wooBalance(_user);
+        return ratio == 0 ? wooBal : (wooBal * ratio) / 1e18;
     }
 
     function _claim(address _user, address _to) internal override returns (uint256 rewardAmount) {
@@ -32,5 +29,9 @@ contract MpRewarder is BaseRewarder {
         rewardAmount = rewardClaimable[_user];
         rewardClaimable[_user] = 0;
         totalRewardClaimable -= rewardAmount;
+    }
+
+    function setBooster(address _booster) external onlyOwner {
+        booster = IRewardBooster(_booster);
     }
 }

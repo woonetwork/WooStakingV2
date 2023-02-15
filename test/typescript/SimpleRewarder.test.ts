@@ -42,7 +42,7 @@ import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManag
 import TestTokenArtifact from "../../artifacts/contracts/test/TestToken.sol/TestToken.json";
 
 
-describe("Staking & Reward tests", () => {
+describe("SimpleRewarder tests", () => {
 
     let owner: SignerWithAddress;
     let baseToken: SignerWithAddress;

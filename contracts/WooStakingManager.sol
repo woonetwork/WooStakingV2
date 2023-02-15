@@ -58,18 +58,17 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
 
     event AdminUpdated(address indexed addr, bool flag);
 
-    uint256 public wooTotalBalance;
     mapping(address => uint256) public wooBalance;
     mapping(address => uint256) public mpBalance;
+    uint256 public wooTotalBalance;
+    uint256 public mpTotalBalance;
 
     mapping(address => bool) public isAdmin;
 
     IWooPPV2 public wooPP;
     IWooStakingProxy public stakingProxy;
 
-    address public controller;
     address public immutable woo;
-    address public immutable mp;
 
     IRewarder public mpRewarder; // Record and distribute MP rewards
     EnumerableSet.AddressSet private rewarders; // Other general rewards (e.g. usdc, eth, op, etc)
@@ -79,15 +78,8 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
         _;
     }
 
-    modifier onlyController() {
-        require(msg.sender == controller, "WooStakingManager: !controller");
-        _;
-    }
-
-    constructor(address _controller, address _woo, address _mp, address _wooPP, address _stakingProxy) {
-        controller = _controller;
+    constructor(address _woo, address _wooPP, address _stakingProxy) {
         woo = _woo;
-        mp = _mp;
         wooPP = IWooPPV2(_wooPP);
         stakingProxy = IWooStakingProxy(_stakingProxy);
     }
@@ -97,12 +89,10 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
     function setMPRewarder(address _rewarder) external onlyAdmin {
         mpRewarder = IRewarder(_rewarder);
         require(address(IRewarder(_rewarder).stakingManager()) == address(this));
-        require(mpRewarder.rewardToken() == mp, "WooStakingManager: !mpRewarder");
     }
 
     function addRewarder(address _rewarder) external onlyAdmin {
         require(address(IRewarder(_rewarder).stakingManager()) == address(this));
-        require(IRewarder(_rewarder).rewardToken() != address(mp));
         rewarders.add(_rewarder);
     }
 
@@ -119,40 +109,34 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
         }
     }
 
-    function stakeWoo(address _user, uint256 _amount) public onlyController {
+    function stakeWoo(address _user, uint256 _amount) public onlyAdmin {
         _updateRewards(_user);
-
-        // TODO: update other rewarders' reward
+        compoundMP(_user);
 
         wooBalance[_user] += _amount;
         wooTotalBalance += _amount;
-
-        compoundMP(_user);
     }
 
-    function unstakeWoo(address _user, uint256 _amount) external onlyController {
+    function unstakeWoo(address _user, uint256 _amount) external onlyAdmin {
         _updateRewards(_user);
-
-        // TODO: update other rewarders' reward
+        compoundMP(_user);
 
         uint256 wooPrevBalance = wooBalance[_user];
         wooBalance[_user] -= _amount;
         wooTotalBalance -= _amount;
 
-        compoundMP(_user);
-
         // remove the proportional amount of MP tokens, based on amount / wooBalance
         uint256 burnAmount = (mpBalance[_user] * _amount) / wooPrevBalance;
         mpBalance[_user] -= burnAmount;
+        mpTotalBalance -= burnAmount;
     }
 
-    // 权重: have a better name
     function totalBalance(address _user) external view returns (uint256) {
         return wooBalance[_user] + mpBalance[_user];
     }
 
     function totalBalance() external view returns (uint256) {
-        return wooTotalBalance + IERC20(mp).balanceOf(address(this));
+        return wooTotalBalance + mpTotalBalance;
     }
 
     function pendingRewards(
@@ -173,16 +157,18 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
         }
     }
 
+    // TODO: add get rewarder array method
+
     function claimRewards() external {
         _claim(msg.sender);
     }
 
-    function claimRewards(address _user) external onlyController {
+    function claimRewards(address _user) external onlyAdmin {
         _claim(_user);
     }
 
     function _claim(address _user) private {
-        mpRewarder.claim(_user);
+        compoundMP(_user);
 
         for (uint256 i = 0; i < rewarders.length(); ++i) {
             IRewarder _rewarder = IRewarder(rewarders.at(i));
@@ -190,50 +176,37 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
         }
     }
 
-    function compoundAll(address _user) external onlyController {
+    function compoundAll(address _user) external onlyAdmin {
         compoundMP(_user);
         compoundRewards(_user);
     }
 
-    function compoundMP(address _user) public onlyController {
-        mpRewarder.updateRewardForUser(_user);
-
-        // For MP, claim and then directly stake.
+    function compoundMP(address _user) public onlyAdmin {
+        // claim auto updates the reward for the user
         uint256 amount = mpRewarder.claim(_user, address(this));
 
         // NO need to transfer MP token to self again
         mpBalance[_user] += amount;
+        mpTotalBalance += amount;
     }
 
-    function compoundRewards(address _user) public onlyController {
-        unchecked {
-            for (uint256 i = 0; i < rewarders.length(); ++i) {
-                IRewarder(rewarders.at(i)).updateRewardForUser(_user);
-            }
-        }
-
-        // For other general rewards, claim and then swap to compound token, and then stake.
+    function compoundRewards(address _user) public onlyAdmin {
+        // TODO: attention! claim triggers updateReward
         uint256 wooAmount = 0;
         address selfAddr = address(this);
         for (uint256 i = 0; i < rewarders.length(); ++i) {
             IRewarder _rewarder = IRewarder(rewarders.at(i));
-            uint256 amount = _rewarder.claim(_user, selfAddr);
+            uint256 rewardAmount = _rewarder.claim(_user, selfAddr); // claim auto update reward for the user.
 
-            // NOTE: a more general approach
-            // TransferHelper.safeApprove(_rewarder.rewardToken(), address(_rewarder), amount);
-            // uint256 compoundAmount = _rewarder.swapToCompoundToken(address(this));
-            // stakeToken(_rewarder.compoundToken(), _user, compoundAmount);
-            TransferHelper.safeApprove(_rewarder.rewardToken(), address(wooPP), amount);
+            TransferHelper.safeApprove(_rewarder.rewardToken(), address(wooPP), rewardAmount);
             if (_rewarder.rewardToken() != woo) {
-                wooAmount += wooPP.swap(_rewarder.rewardToken(), woo, amount, 0, selfAddr, selfAddr);
+                wooAmount += wooPP.swap(_rewarder.rewardToken(), woo, rewardAmount, 0, selfAddr, selfAddr);
             }
         }
 
         TransferHelper.safeApprove(woo, address(stakingProxy), wooAmount);
         stakingProxy.stake(_user, wooAmount);
     }
-
-    // TODO: transfer account
 
     // --------------------- Admin Functions --------------------- //
 
@@ -252,6 +225,10 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
 
     function setWooPP(address _wooPP) external onlyAdmin {
         wooPP = IWooPPV2(_wooPP);
+    }
+
+    function setStakingProxy(address _proxy) external onlyAdmin {
+        stakingProxy = IWooStakingProxy(_proxy);
     }
 
     function inCaseTokenGotStuck(address stuckToken) external onlyOwner {
