@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./BaseRewarder.sol";
-
-import "../interfaces/IRewardBooster.sol";
+import {IRewardBooster} from "../interfaces/IRewardBooster.sol";
+import {BaseRewarder} from "./BaseRewarder.sol";
 
 contract MpRewarder is BaseRewarder {
     IRewardBooster public booster;

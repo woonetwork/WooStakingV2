@@ -34,36 +34,25 @@ pragma solidity ^0.8.4;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol";
-
-import "./interfaces/IRewarder.sol";
-import "./interfaces/IWooStakingManager.sol";
-import "./interfaces/IWooStakingProxy.sol";
-import "./interfaces/IWooPPV2.sol";
-
-import "./util/TransferHelper.sol";
-
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
+import {IRewarder} from "./interfaces/IRewarder.sol";
+import {IWooPPV2} from "./interfaces/IWooPPV2.sol";
+import {IWooStakingManager} from "./interfaces/IWooStakingManager.sol";
+import {IWooStakingProxy} from "./interfaces/IWooStakingProxy.sol";
+
+import {BaseAdminOperation} from "./BaseAdminOperation.sol";
+import {TransferHelper} from "./util/TransferHelper.sol";
 
 // TODO: emit events
 //
-contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyGuard {
-    using SafeERC20 for IERC20;
+contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
     using EnumerableSet for EnumerableSet.AddressSet;
-
-    event AdminUpdated(address indexed addr, bool flag);
 
     mapping(address => uint256) public wooBalance;
     mapping(address => uint256) public mpBalance;
     uint256 public wooTotalBalance;
     uint256 public mpTotalBalance;
-
-    mapping(address => bool) public isAdmin;
 
     IWooPPV2 public wooPP;
     IWooStakingProxy public stakingProxy;
@@ -72,11 +61,6 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
 
     IRewarder public mpRewarder; // Record and distribute MP rewards
     EnumerableSet.AddressSet private rewarders; // Other general rewards (e.g. usdc, eth, op, etc)
-
-    modifier onlyAdmin() {
-        require(msg.sender == owner() || isAdmin[msg.sender], "WooStakingManager: !admin");
-        _;
-    }
 
     constructor(address _woo, address _wooPP, address _stakingProxy) {
         woo = _woo;
@@ -210,33 +194,11 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
 
     // --------------------- Admin Functions --------------------- //
 
-    function pause() public onlyAdmin {
-        super._pause();
-    }
-
-    function unpause() public onlyAdmin {
-        super._unpause();
-    }
-
-    function setAdmin(address addr, bool flag) external onlyAdmin {
-        isAdmin[addr] = flag;
-        emit AdminUpdated(addr, flag);
-    }
-
     function setWooPP(address _wooPP) external onlyAdmin {
         wooPP = IWooPPV2(_wooPP);
     }
 
     function setStakingProxy(address _proxy) external onlyAdmin {
         stakingProxy = IWooStakingProxy(_proxy);
-    }
-
-    function inCaseTokenGotStuck(address stuckToken) external onlyOwner {
-        if (stuckToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            TransferHelper.safeTransferETH(msg.sender, address(this).balance);
-        } else {
-            uint256 amount = IERC20(stuckToken).balanceOf(address(this));
-            TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
-        }
     }
 }

@@ -1,34 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {IRewarder} from "../interfaces/IRewarder.sol";
+import {IWooStakingManager} from "../interfaces/IWooStakingManager.sol";
+import {BaseAdminOperation} from "../BaseAdminOperation.sol";
+import {TransferHelper} from "../util/TransferHelper.sol";
 
-import "@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol";
-
-import "../interfaces/IRewarder.sol";
-import "../interfaces/IWooStakingManager.sol";
-import "../util/TransferHelper.sol";
-
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-
-abstract contract BaseRewarder is IRewarder, Ownable, Pausable, ReentrancyGuard {
-    using SafeERC20 for IERC20;
-
-    mapping(address => uint256) public rewardDebt; // reward debt
-    mapping(address => uint256) public rewardClaimable; // shadow harvested reward
-
-    uint256 public accTokenPerShare;
-
-    IWooStakingManager public stakingManager;
-
+abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
     address public immutable rewardToken; // reward token
+    uint256 public accTokenPerShare;
     uint256 public rewardPerBlock; // emission rate of reward
     uint256 public lastRewardBlock; // last distribution block
 
     uint256 totalRewardClaimable = 0;
+
+    IWooStakingManager public stakingManager;
+
+    mapping(address => uint256) public rewardDebt; // reward debt
+    mapping(address => uint256) public rewardClaimable; // shadow harvested reward
 
     constructor(address _rewardToken, address _stakingManager) {
         rewardToken = _rewardToken;

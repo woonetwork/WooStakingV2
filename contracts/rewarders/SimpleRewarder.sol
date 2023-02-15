@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./BaseRewarder.sol";
+import {BaseRewarder} from "./BaseRewarder.sol";
+import {TransferHelper} from "../util/TransferHelper.sol";
 
 contract SimpleRewarder is BaseRewarder {
     constructor(address _rewardToken, address _stakingManager) BaseRewarder(_rewardToken, _stakingManager) {}

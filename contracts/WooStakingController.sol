@@ -1,19 +1,49 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+/*
 
-import "@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol";
+░██╗░░░░░░░██╗░█████╗░░█████╗░░░░░░░███████╗██╗
+░██║░░██╗░░██║██╔══██╗██╔══██╗░░░░░░██╔════╝██║
+░╚██╗████╗██╔╝██║░░██║██║░░██║█████╗█████╗░░██║
+░░████╔═████║░██║░░██║██║░░██║╚════╝██╔══╝░░██║
+░░╚██╔╝░╚██╔╝░╚█████╔╝╚█████╔╝░░░░░░██║░░░░░██║
+░░░╚═╝░░░╚═╝░░░╚════╝░░╚════╝░░░░░░░╚═╝░░░░░╚═╝
 
-import "./interfaces/IWooStakingManager.sol";
-import "./util/TransferHelper.sol";
+*
+* MIT License
+* ===========
+*
+* Copyright (c) 2020 WooTrade
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {NonblockingLzApp} from "@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol";
 
-contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
-    using SafeERC20 for IERC20;
+import {IWooStakingManager} from "./interfaces/IWooStakingManager.sol";
+import {BaseAdminOperation} from "./BaseAdminOperation.sol";
+import {TransferHelper} from "./util/TransferHelper.sol";
+
+contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
+    event StakeOnController(address indexed user, uint256 amount);
+    event WithdrawOnController(address indexed user, uint256 amount);
+    event CompoundOnController(address indexed user);
 
     uint8 public constant ACTION_STAKE = 1;
     uint8 public constant ACTION_UNSTAKE = 2;
@@ -22,17 +52,6 @@ contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
     IWooStakingManager public stakingManager;
 
     mapping(address => uint256) public balances;
-    mapping(address => bool) public isAdmin;
-
-    event StakeOnController(address indexed user, uint256 amount);
-    event WithdrawOnController(address indexed user, uint256 amount);
-    event CompoundOnController(address indexed user);
-    event AdminUpdated(address indexed addr, bool flag);
-
-    modifier onlyAdmin() {
-        require(msg.sender == owner() || isAdmin[msg.sender], "WooStakingController: !admin");
-        _;
-    }
 
     constructor(address _endpoint, address _stakingManager) NonblockingLzApp(_endpoint) {
         stakingManager = IWooStakingManager(_stakingManager);
@@ -41,9 +60,9 @@ contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
     // --------------------- LZ Receive Message Functions --------------------- //
 
     function _nonblockingLzReceive(
-        uint16 /*_srcChainId*/,
-        bytes memory /*_srcAddress*/,
-        uint64 /*_nonce*/,
+        uint16, // _srcChainId
+        bytes memory, // _srcAddress
+        uint64, // _nonce
         bytes memory _payload
     ) internal override whenNotPaused {
         (address user, uint8 action, uint256 amount) = abi.decode(_payload, (address, uint8, uint256));
@@ -79,34 +98,12 @@ contract WooStakingController is NonblockingLzApp, Pausable, ReentrancyGuard {
 
     // --------------------- Admin Functions --------------------- //
 
-    function pause() public onlyAdmin {
-        super._pause();
-    }
-
-    function unpause() public onlyAdmin {
-        super._unpause();
-    }
-
-    function setAdmin(address addr, bool flag) external onlyAdmin {
-        isAdmin[addr] = flag;
-        emit AdminUpdated(addr, flag);
-    }
-
     function setStakingManager(address _manager) external onlyAdmin {
         stakingManager = IWooStakingManager(_manager);
     }
 
     function syncBalance(address _user, uint256 _balance) external onlyAdmin {
         // TODO: handle the balance and reward update
-    }
-
-    function inCaseTokenGotStuck(address stuckToken) external onlyOwner {
-        if (stuckToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            TransferHelper.safeTransferETH(msg.sender, address(this).balance);
-        } else {
-            uint256 amount = IERC20(stuckToken).balanceOf(address(this));
-            TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
-        }
     }
 
     receive() external payable {}
