@@ -141,7 +141,7 @@ contract WooStakingManager is IWooStakingManager, Ownable, Pausable, ReentrancyG
 
     function pendingRewards(
         address _user
-    ) external returns (uint256 mpRewardAmount, address[] memory rewardTokens, uint256[] memory amounts) {
+    ) external view returns (uint256 mpRewardAmount, address[] memory rewardTokens, uint256[] memory amounts) {
         mpRewardAmount = mpRewarder.pendingReward(_user);
 
         uint256 length = rewarders.length();

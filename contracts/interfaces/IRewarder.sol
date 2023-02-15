@@ -5,9 +5,9 @@ pragma solidity ^0.8.0;
 import "./IWooStakingManager.sol";
 
 interface IRewarder {
-    function rewardToken() external returns (address);
+    function rewardToken() external view returns (address);
 
-    function pendingReward(address _user) external returns (uint256 rewardAmount);
+    function pendingReward(address _user) external view returns (uint256 rewardAmount);
 
     function claim(address _user) external returns (uint256 rewardAmount);
 
