@@ -43,6 +43,7 @@ import {IWooStakingProxy} from "./interfaces/IWooStakingProxy.sol";
 
 import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 import {TransferHelper} from "./util/TransferHelper.sol";
+import "hardhat/console.sol";
 
 // TODO: emit events
 //
@@ -181,7 +182,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         for (uint256 i = 0; i < rewarders.length(); ++i) {
             IRewarder _rewarder = IRewarder(rewarders.at(i));
             uint256 rewardAmount = _rewarder.claim(_user, selfAddr); // claim auto update reward for the user.
-
+            // console.log("rewardToken: %s _user: %s, rewardAmount: %s ", _rewarder.rewardToken(), _user, rewardAmount);
             TransferHelper.safeApprove(_rewarder.rewardToken(), address(wooPP), rewardAmount);
             if (_rewarder.rewardToken() != woo) {
                 wooAmount += wooPP.swap(_rewarder.rewardToken(), woo, rewardAmount, 0, selfAddr, selfAddr);
