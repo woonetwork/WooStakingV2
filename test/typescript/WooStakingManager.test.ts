@@ -36,7 +36,7 @@ import { deployContract, deployMockContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 const { mine, time, mineUpTo } = require("@nomicfoundation/hardhat-network-helpers");
 
-import { IWooStakingProxy, MpRewarder, RewardBooster, SimpleRewarder, WooStakingManager } from "../../typechain";
+import { IWooStakingProxy, MpRewarder, RewardBooster, SimpleRewarder, TestWooPP, WooStakingManager } from "../../typechain";
 import SimpleRewarderArtifact from "../../artifacts/contracts/rewarders/SimpleRewarder.sol/SimpleRewarder.json";
 import MpRewarderArtifact from "../../artifacts/contracts/rewarders/MpRewarder.sol/MpRewarder.json";
 import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManager.sol/WooStakingManager.json";
@@ -45,6 +45,7 @@ import WooStakingProxyArtifact from "../../artifacts/contracts/WooStakingProxy.s
 import IWooPPV2Artifact from "../../artifacts/contracts/interfaces/IWooPPV2.sol/IWooPPV2.json";
 import WooStakingProxyArtifact from "../../artifacts/contracts/rewarders/MpRewarder.sol/MpRewarder.json";
 import RewardBoosterArtifact from "../../artifacts/contracts/rewarders/RewardBooster.sol/RewardBooster.json";
+import TestWooPPArtifact from "../../artifacts/contracts/test/TestWooPP.sol/TestWooPP.json";
 import { latest } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 
 
@@ -57,6 +58,7 @@ describe("WooStakingManager tests", () => {
     let rewarder1: SimpleRewarder;
     let rewarder2: SimpleRewarder;
     let stakingManager: WooStakingManager;
+    let testWooPP: TestWooPP;
 
     let wooPPv2: Contract;
     let proxy: Contract;
@@ -77,6 +79,14 @@ describe("WooStakingManager tests", () => {
 
         wooPPv2 = await deployMockContract(owner, IWooPPV2Artifact.abi);
         await wooPPv2.mock.swap.returns(10000);
+
+        testWooPP = (await deployContract(owner, TestWooPPArtifact, [])) as TestWooPP;
+        await testWooPP.setPrice(usdcToken.address, utils.parseEther("1"));
+        await testWooPP.setPrice(wethToken.address, utils.parseEther("1700"));
+        await testWooPP.setPrice(wooToken.address, utils.parseEther("0.2"));
+        await wooToken.mint(testWooPP.address, utils.parseEther("100000"));
+        await usdcToken.mint(testWooPP.address, utils.parseEther("100000"));
+        await wethToken.mint(testWooPP.address, utils.parseEther("1000"));
 
         proxy = await deployMockContract(owner, WooStakingProxyArtifact.abi);
         await proxy.mock.stake.returns();
@@ -207,6 +217,40 @@ describe("WooStakingManager tests", () => {
         // expect(await wethToken.balanceOf(user1.address)).to.be.gt(0);
         // expect(await usdcToken.balanceOf(user1.address)).to.be.gt(0);
     });
+
+    it("CompundRewards Tests", async () => {
+        console.log("woo: %s usdc: %s weth: %s ",
+            wooToken.address, usdcToken.address, wethToken.address);
+        await stakingManager.setWooPP(testWooPP.address);
+        let swapAmount = await testWooPP.getSwapAmount(
+            usdcToken.address, wooToken.address,
+            utils.parseEther("100"));
+        expect(swapAmount).to.be.eq(utils.parseEther("500"));
+
+        await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
+        await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
+        await mpRewarder.setRewardPerBlock(utils.parseEther("100"));    // mp   100
+
+        await _logUserPending();
+        await stakingManager.stakeWoo(user1.address, utils.parseEther("20"));
+        await stakingManager.stakeWoo(user2.address, utils.parseEther("10"));
+        await mine(2);
+        await stakingManager.compoundRewards(user1.address);
+        await _logUserWoo();
+
+        await stakingManager.compoundRewards(user2.address);
+        await _logUserWoo();
+
+        await _logUserPending();
+
+    });
+
+    async function _logUserWoo() {
+        let woo1 = utils.formatEther(await stakingManager.wooBalance(user1.address));
+        let woo2 = utils.formatEther(await stakingManager.wooBalance(user2.address));
+        console.log("Woo (user1, user2): ", woo1, woo2);
+        console.log(" --- \n");
+    }
 
     async function _logPrs(mpReward, tokens, amounts) {
         console.log("   -  MP ", utils.formatEther(mpReward));
