@@ -175,7 +175,7 @@ describe("WooStakingManager tests", () => {
 
         await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
         await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
-        await mpRewarder.setRewardPerBlock(utils.parseEther("100"));    // mp   100
+        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
 
         await stakingManager.stakeWoo(user1.address, utils.parseEther("10"));
         await stakingManager.stakeWoo(user2.address, utils.parseEther("20"));
@@ -205,19 +205,22 @@ describe("WooStakingManager tests", () => {
         await _logUserPending();    // block 40
 
 
-        // console.log("usdc, weth for user1 (40 woo): ",
-        //     utils.formatEther(await usdcToken.balanceOf(user1.address)),
-        //     utils.formatEther(await wethToken.balanceOf(user1.address)));
-        // expect(await usdcToken.balanceOf(user1.address)).to.be.eq(0);
-        // expect(await wethToken.balanceOf(user1.address)).to.be.eq(0);
-        // await stakingManager["claimRewards(address)"](user1.address);
-        // console.log("usdc, weth for user1 (40 woo): ",
-        //     utils.formatEther(await usdcToken.balanceOf(user1.address)),
-        //     utils.formatEther(await wethToken.balanceOf(user1.address)));
-        // expect(await wethToken.balanceOf(user1.address)).to.be.gt(0);
-        // expect(await usdcToken.balanceOf(user1.address)).to.be.gt(0);
+        console.log("\n --- Claim --- \n");
+        await _logUserBals();
+        expect(await usdcToken.balanceOf(user1.address)).to.be.eq(0);
+        expect(await wethToken.balanceOf(user1.address)).to.be.eq(0);
+        expect(await usdcToken.balanceOf(user2.address)).to.be.eq(0);
+        expect(await wethToken.balanceOf(user2.address)).to.be.eq(0);
+        await stakingManager["claimRewards(address)"](user1.address);
+        await stakingManager["claimRewards(address)"](user2.address); // one block reward purely for user2
+        await _logUserBals();
+        expect(await wethToken.balanceOf(user1.address)).to.be.gt(0);
+        expect(await usdcToken.balanceOf(user1.address)).to.be.gt(0);
+        expect(await wethToken.balanceOf(user2.address)).to.be.gt(0);
+        expect(await usdcToken.balanceOf(user2.address)).to.be.gt(0);
     });
 
+<<<<<<< HEAD
     it("CompundRewards Tests", async () => {
         console.log("woo: %s usdc: %s weth: %s ",
             wooToken.address, usdcToken.address, wethToken.address);
@@ -250,6 +253,17 @@ describe("WooStakingManager tests", () => {
         let woo2 = utils.formatEther(await stakingManager.wooBalance(user2.address));
         console.log("Woo (user1, user2): ", woo1, woo2);
         console.log(" --- \n");
+    }
+
+    async function _logUserBals() {
+        _logUserBal(user1.address, "user1");
+        _logUserBal(user2.address, "user2");
+    }
+
+    async function _logUserBal(user:String, name:String) {
+        console.log("usdc, weth for ", name, ": ",
+            utils.formatEther(await usdcToken.balanceOf(user)),
+            utils.formatEther(await wethToken.balanceOf(user)));
     }
 
     async function _logPrs(mpReward, tokens, amounts) {
