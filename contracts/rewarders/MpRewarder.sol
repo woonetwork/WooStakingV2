@@ -61,6 +61,7 @@ contract MpRewarder is BaseRewarder {
         rewardAmount = rewardClaimable[_user];
         rewardClaimable[_user] = 0;
         totalRewardClaimable -= rewardAmount;
+        // updateDebtForUser(_user);
     }
 
     function setBooster(address _booster) external onlyOwner {

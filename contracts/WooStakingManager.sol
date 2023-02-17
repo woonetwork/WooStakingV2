@@ -94,12 +94,23 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         }
     }
 
+    function _updateDebts(address _user) private {
+        mpRewarder.updateDebtForUser(_user);
+        unchecked {
+            for (uint256 i = 0; i < rewarders.length(); ++i) {
+                IRewarder(rewarders.at(i)).updateDebtForUser(_user);
+            }
+        }
+    }
+
     function stakeWoo(address _user, uint256 _amount) public onlyAdmin {
         _updateRewards(_user);
         compoundMP(_user);
 
         wooBalance[_user] += _amount;
         wooTotalBalance += _amount;
+
+        _updateDebts(_user);
     }
 
     function unstakeWoo(address _user, uint256 _amount) external onlyAdmin {
@@ -109,6 +120,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         uint256 wooPrevBalance = wooBalance[_user];
         wooBalance[_user] -= _amount;
         wooTotalBalance -= _amount;
+
+        _updateDebts(_user);
 
         // remove the proportional amount of MP tokens, based on amount / wooBalance
         uint256 burnAmount = (mpBalance[_user] * _amount) / wooPrevBalance;
@@ -153,7 +166,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
     }
 
     function _claim(address _user) private {
-        compoundMP(_user);
+        // compoundMP(_user);
 
         for (uint256 i = 0; i < rewarders.length(); ++i) {
             IRewarder _rewarder = IRewarder(rewarders.at(i));

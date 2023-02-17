@@ -81,11 +81,12 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
         return (block.number - lastRewardBlock) * rewardPerBlock;
     }
 
-    function claim(address _user) external returns (uint256 rewardAmount) {
-        rewardAmount = _claim(_user, _user); // TODO: double check the _user is the receiver address
+    function claim(address _user) external onlyAdmin returns (uint256 rewardAmount) {
+        // TODO: double check the _user is the receiver address
+        rewardAmount = _claim(_user, _user);
     }
 
-    function claim(address _user, address _to) external returns (uint256 rewardAmount) {
+    function claim(address _user, address _to) external onlyAdmin returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _to);
     }
 
@@ -98,6 +99,7 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
     function updateReward() public {
         uint256 _totalWeight = totalWeight();
         if (_totalWeight == 0 || block.number <= lastRewardBlock) {
+            lastRewardBlock = block.number;
             return;
         }
 
@@ -106,9 +108,16 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
         lastRewardBlock = block.number;
     }
 
-    // TODO: settle the user's rewards
     function updateRewardForUser(address _user) public {
-        updateReward();
+        uint256 _totalWeight = totalWeight();
+        if (_totalWeight == 0 || block.number <= lastRewardBlock) {
+            lastRewardBlock = block.number;
+            return;
+        }
+
+        uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
+        accTokenPerShare += (rewards * 1e18) / _totalWeight;
+        lastRewardBlock = block.number;
 
         uint256 accUserReward = (weight(_user) * accTokenPerShare) / 1e18;
         uint256 newUserReward = accUserReward - rewardDebt[_user];
@@ -117,7 +126,11 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
         rewardDebt[_user] = accUserReward;
     }
 
-    function setRewardPerBlock(uint256 _rewardPerBlock) external onlyOwner {
+    function updateDebtForUser(address _user) public {
+        rewardDebt[_user] = (weight(_user) * accTokenPerShare) / 1e18;
+    }
+
+    function setRewardPerBlock(uint256 _rewardPerBlock) external onlyAdmin {
         updateReward();
         rewardPerBlock = _rewardPerBlock;
     }
