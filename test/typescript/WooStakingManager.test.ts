@@ -168,7 +168,6 @@ describe("WooStakingManager tests", () => {
     // });
 
 
-
     it("pendingRewards Tests", async () => {
 
         await _logUserPending();
@@ -220,7 +219,6 @@ describe("WooStakingManager tests", () => {
         expect(await usdcToken.balanceOf(user2.address)).to.be.gt(0);
     });
 
-<<<<<<< HEAD
     it("CompundRewards Tests", async () => {
         console.log("woo: %s usdc: %s weth: %s ",
             wooToken.address, usdcToken.address, wethToken.address);
@@ -232,16 +230,22 @@ describe("WooStakingManager tests", () => {
 
         await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
         await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
-        await mpRewarder.setRewardPerBlock(utils.parseEther("100"));    // mp   100
+        // await mpRewarder.setRewardPerBlock(utils.parseEther("100"));    // mp   100
+        // await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
+        await mpRewarder.setRewardRate(0);
 
         await _logUserPending();
         await stakingManager.stakeWoo(user1.address, utils.parseEther("20"));
         await stakingManager.stakeWoo(user2.address, utils.parseEther("10"));
         await mine(2);
+        await _logUserPending();
         await stakingManager.compoundRewards(user1.address);
+        console.log("Compound user1 woo")
         await _logUserWoo();
+        await _logUserPending();
 
         await stakingManager.compoundRewards(user2.address);
+        console.log("Compound user2 woo")
         await _logUserWoo();
 
         await _logUserPending();

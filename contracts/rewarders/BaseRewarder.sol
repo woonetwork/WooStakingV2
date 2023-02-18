@@ -123,7 +123,7 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
         uint256 newUserReward = accUserReward - rewardDebt[_user];
         rewardClaimable[_user] += newUserReward;
         totalRewardClaimable += newUserReward;
-        rewardDebt[_user] = accUserReward;
+        // rewardDebt[_user] = accUserReward;
     }
 
     function updateDebtForUser(address _user) public {

@@ -195,7 +195,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         for (uint256 i = 0; i < rewarders.length(); ++i) {
             IRewarder _rewarder = IRewarder(rewarders.at(i));
             uint256 rewardAmount = _rewarder.claim(_user, selfAddr); // claim auto update reward for the user.
-            // console.log("rewardToken: %s _user: %s, rewardAmount: %s ", _rewarder.rewardToken(), _user, rewardAmount);
+            console.log("rewardToken: %s _user: %s, rewardAmount: %s ", _rewarder.rewardToken(), _user, rewardAmount);
             TransferHelper.safeApprove(_rewarder.rewardToken(), address(wooPP), rewardAmount);
             if (_rewarder.rewardToken() != woo) {
                 wooAmount += wooPP.swap(_rewarder.rewardToken(), woo, rewardAmount, 0, selfAddr, selfAddr);
@@ -204,6 +204,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
 
         TransferHelper.safeApprove(woo, address(stakingProxy), wooAmount);
         stakingProxy.stake(_user, wooAmount);
+        // stakeWoo(_user, wooAmount);
     }
 
     // --------------------- Admin Functions --------------------- //

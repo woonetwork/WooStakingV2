@@ -36,6 +36,7 @@ pragma solidity ^0.8.4;
 
 import {BaseRewarder} from "./BaseRewarder.sol";
 import {TransferHelper} from "../util/TransferHelper.sol";
+import "hardhat/console.sol";
 
 contract SimpleRewarder is BaseRewarder {
     constructor(address _rewardToken, address _stakingManager) BaseRewarder(_rewardToken, _stakingManager) {}
@@ -48,12 +49,29 @@ contract SimpleRewarder is BaseRewarder {
         return stakingManager.totalBalance(_user);
     }
 
+    // function _claim(address _user, address _to) internal override returns (uint256 rewardAmount) {
+    //     uint256 _totalWeight = totalWeight();
+
+    //     if (block.number > lastRewardBlock && _totalWeight != 0) {
+    //         uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
+    //         accTokenPerShare += (rewards * 1e18) / _totalWeight;
+    //         lastRewardBlock = block.number;
+    //     }
+
+    //     uint256 newUserReward = (weight(_user) * accTokenPerShare) / 1e18 - rewardDebt[_user];
+    //     rewardAmount = rewardClaimable[_user] + newUserReward;
+    //     console.log("rewardAmount: %s newUserReward: %s", rewardAmount, newUserReward);
+    //     TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
+    //     totalRewardClaimable -= rewardClaimable[_user];
+    //     rewardClaimable[_user] = 0;
+    //     // updateDebtForUser(_user); // TODO: needless
+    // }
     function _claim(address _user, address _to) internal override returns (uint256 rewardAmount) {
         updateRewardForUser(_user);
         rewardAmount = rewardClaimable[_user];
         TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
         totalRewardClaimable -= rewardAmount;
         rewardClaimable[_user] = 0;
-        // updateDebtForUser(_user); // TODO: needless
+        updateDebtForUser(_user); // TODO: needless
     }
 }

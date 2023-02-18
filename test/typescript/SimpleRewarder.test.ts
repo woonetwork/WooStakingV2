@@ -112,6 +112,7 @@ describe("SimpleRewarder tests", () => {
         expect(Number(utils.formatEther(await rewarder.pendingReward(user2.address)))).to.be.eq(60); // 200 * 30%
 
         await rewarder.updateRewardForUser(user.address);
+        await rewarder.updateDebtForUser(user.address);
 
         await _logPendingReward();
 
