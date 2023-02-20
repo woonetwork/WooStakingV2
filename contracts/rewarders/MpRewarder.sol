@@ -116,6 +116,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
     }
 
     function setRewardRate(uint256 _rate) external onlyAdmin {
+        updateReward();
         rewardRate = _rate;
     }
 

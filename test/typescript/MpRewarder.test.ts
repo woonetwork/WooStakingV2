@@ -58,27 +58,23 @@ describe("MpRewarder tests", () => {
 
     let mpToken: Contract;
 
-    beforeEach(async () => {
-        const signers = await ethers.getSigners();
-        owner = signers[0];
-        baseToken = signers[1];
-        user = signers[2];
-        user1 = signers[3];
-        user2 = signers[4];
-
+    before(async () => {
+        [owner] = await ethers.getSigners();
         stakingManager = (await deployContract(owner, TestStakingManagerArtifact, [])) as WooStakingManager;
-        await stakingManager.stakeWoo(user.address, 50);
-        await stakingManager.stakeWoo(user1.address, 100);
-        await stakingManager.stakeWoo(user2.address, 300);
-
         mpToken = await deployContract(owner, TestTokenArtifact, []);
-
         await mpToken.mint(owner.address, utils.parseEther("100000"));
-
         mpRewarder = (await deployContract(owner, MpRewarderArtifact, [mpToken.address, stakingManager.address])) as MpRewarder;
         await mpToken.mint(mpRewarder.address, utils.parseEther("100000"));
         booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address])) as RewardBooster;
         await mpRewarder.setBooster(booster.address);
+        await stakingManager.setMPRewarder(mpRewarder.address);
+    });
+
+    beforeEach(async () => {
+        [user, user1, user2] = await ethers.getSigners();
+        await stakingManager.stakeWoo(user.address, 50);
+        await stakingManager.stakeWoo(user1.address, 100);
+        await stakingManager.stakeWoo(user2.address, 300);
     });
 
     it("MP tests", async () => {

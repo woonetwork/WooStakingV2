@@ -68,6 +68,11 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         stakingProxy = IWooStakingProxy(_stakingProxy);
     }
 
+    modifier onlyMpRewarder() {
+        require(address(mpRewarder) == msg.sender, "RESTRICTED_TO_MP_REWARDER");
+        _;
+    }
+
     // --------------------- Business Functions --------------------- //
 
     function setMPRewarder(address _rewarder) external onlyAdmin {
@@ -183,8 +188,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         mpRewarder.claim(_user, address(this));
     }
 
-    function addMP(address _user, uint256 _amount) public {
-        require(address(mpRewarder) == msg.sender, "RESTRICTED_TO_MP_REWARDER");
+    function addMP(address _user, uint256 _amount) public onlyMpRewarder {
         mpBalance[_user] += _amount;
         mpTotalBalance += _amount;
     }
