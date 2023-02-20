@@ -75,6 +75,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
         require(address(stakingManager) == _to, "RESTRICTED_TO_STAKING_MANAGER");
         updateRewardForUser(_user);
         rewardAmount = rewardClaimable[_user];
+        stakingManager.addMP(_user, rewardAmount);
         rewardClaimable[_user] = 0;
         totalRewardClaimable -= rewardAmount;
     }

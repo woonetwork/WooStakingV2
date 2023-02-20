@@ -27,6 +27,8 @@ interface IWooStakingManager {
 
     function compoundMP(address _user) external;
 
+    function addMP(address _user, uint256 _amount) external;
+
     function compoundRewards(address _user) external;
 
     function compoundAll(address _user) external;

@@ -220,10 +220,12 @@ describe("WooStakingManager tests", () => {
         expect(await usdcToken.balanceOf(user2.address)).to.be.gt(0);
     });
 
-<<<<<<< HEAD
     it("CompundRewards Tests", async () => {
         console.log("woo: %s usdc: %s weth: %s ",
             wooToken.address, usdcToken.address, wethToken.address);
+        let user1Bal = await usdcToken.balanceOf(user1.address);
+        let user2Bal = await usdcToken.balanceOf(user2.address);
+
         await stakingManager.setWooPP(testWooPP.address);
         let swapAmount = await testWooPP.getSwapAmount(
             usdcToken.address, wooToken.address,
@@ -232,20 +234,29 @@ describe("WooStakingManager tests", () => {
 
         await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
         await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
-        await mpRewarder.setRewardPerBlock(utils.parseEther("100"));    // mp   100
+        await mpRewarder.setRewardRate(0);
 
         await _logUserPending();
         await stakingManager.stakeWoo(user1.address, utils.parseEther("20"));
         await stakingManager.stakeWoo(user2.address, utils.parseEther("10"));
         await mine(2);
+        await _logUserPending();
         await stakingManager.compoundRewards(user1.address);
+
+        
+        console.log("Compound user1 woo");
+        await _logUserBals();
         await _logUserWoo();
 
+        expect(await usdcToken.balanceOf(user1.address)).to.be.eq(user1Bal);
+
         await stakingManager.compoundRewards(user2.address);
+        console.log("Compound user2 woo");
+        await _logUserBals();
         await _logUserWoo();
 
         await _logUserPending();
-
+        expect(await usdcToken.balanceOf(user2.address)).to.be.eq(user2Bal);
     });
 
     async function _logUserWoo() {
@@ -256,8 +267,8 @@ describe("WooStakingManager tests", () => {
     }
 
     async function _logUserBals() {
-        _logUserBal(user1.address, "user1");
-        _logUserBal(user2.address, "user2");
+        await _logUserBal(user1.address, "user1");
+        await _logUserBal(user2.address, "user2");
     }
 
     async function _logUserBal(user:String, name:String) {
