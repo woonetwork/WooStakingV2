@@ -41,6 +41,9 @@ import {BaseAdminOperation} from "../BaseAdminOperation.sol";
 import {TransferHelper} from "../util/TransferHelper.sol";
 
 contract MpRewarder is IRewarder, BaseAdminOperation {
+    event SetRewardRateOnRewarder(uint256 rate);
+    event SetBoosterOnRewarder(address indexed booster);
+
     address public immutable rewardToken; // reward token
     uint256 public accTokenPerShare;
     uint256 public rewardRate; // emission rate of reward. e.g. 10000th, 100: 1%, 5000: 50%
@@ -82,6 +85,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
 
     function setBooster(address _booster) external onlyOwner {
         booster = IRewardBooster(_booster);
+        emit SetBoosterOnRewarder(_booster);
     }
 
     function pendingReward(address _user) external view returns (uint256 rewardAmount) {
@@ -105,19 +109,23 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
 
     function claim(address _user) external onlyAdmin returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _user);
+        emit ClaimOnRewarder(_user, _user, rewardAmount);
     }
 
     function claim(address _user, address _to) external onlyAdmin returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _to);
+        emit ClaimOnRewarder(_user, _to, rewardAmount);
     }
 
     function setStakingManager(address _manager) external onlyAdmin {
         stakingManager = IWooStakingManager(_manager);
+        emit SetStakingManagerOnRewarder(_manager);
     }
 
     function setRewardRate(uint256 _rate) external onlyAdmin {
         updateReward();
         rewardRate = _rate;
+        emit SetRewardRateOnRewarder(_rate);
     }
 
     // clear and settle the reward

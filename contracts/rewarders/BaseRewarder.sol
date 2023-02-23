@@ -40,6 +40,7 @@ import {BaseAdminOperation} from "../BaseAdminOperation.sol";
 import {TransferHelper} from "../util/TransferHelper.sol";
 
 abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
+    event SetRewardPerBlockOnRewarder(uint256 rewardPerBlock);
     address public immutable rewardToken; // reward token
     uint256 public accTokenPerShare;
     uint256 public rewardPerBlock; // emission rate of reward
@@ -84,14 +85,17 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
     function claim(address _user) external onlyAdmin returns (uint256 rewardAmount) {
         // TODO: double check the _user is the receiver address
         rewardAmount = _claim(_user, _user);
+        emit ClaimOnRewarder(_user, _user, rewardAmount);
     }
 
     function claim(address _user, address _to) external onlyAdmin returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _to);
+        emit ClaimOnRewarder(_user, _to, rewardAmount);
     }
 
     function setStakingManager(address _manager) external onlyOwner {
         stakingManager = IWooStakingManager(_manager);
+        emit SetStakingManagerOnRewarder(_manager);
     }
 
     // clear and settle the reward
@@ -133,5 +137,6 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
     function setRewardPerBlock(uint256 _rewardPerBlock) external onlyAdmin {
         updateReward();
         rewardPerBlock = _rewardPerBlock;
+        emit SetRewardPerBlockOnRewarder(_rewardPerBlock);
     }
 }

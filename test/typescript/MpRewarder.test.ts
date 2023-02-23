@@ -72,9 +72,9 @@ describe("MpRewarder tests", () => {
 
     beforeEach(async () => {
         [user, user1, user2] = await ethers.getSigners();
-        await stakingManager.stakeWoo(user.address, 50);
-        await stakingManager.stakeWoo(user1.address, 100);
-        await stakingManager.stakeWoo(user2.address, 300);
+        await stakingManager.stakeWoo(user.address, utils.parseEther("5"));
+        await stakingManager.stakeWoo(user1.address, utils.parseEther("10"));
+        await stakingManager.stakeWoo(user2.address, utils.parseEther("30"));
     });
 
     it("MP tests", async () => {
@@ -90,6 +90,7 @@ describe("MpRewarder tests", () => {
         let userPending = await mpRewarder.pendingReward(user.address);
         let user1Pending = await mpRewarder.pendingReward(user1.address);
         let user2Pending = await mpRewarder.pendingReward(user2.address);
+        let totalWeight = await mpRewarder.totalWeight()
 
         const blockTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
         let deltaSeconds = BigNumber.from(blockTimestamp - startBlockTimestamp);
@@ -97,7 +98,7 @@ describe("MpRewarder tests", () => {
         expect(user1Pending).to.be.eq(userPending.mul(2));
         expect(user2Pending).to.be.eq(userPending.mul(6));
         expect(allPending).to.be.eq(userPending.mul(9));
-        expect(allPending).to.be.eq(deltaSeconds.mul(450).div(100));
+        expect(allPending).to.be.eq(deltaSeconds.mul(totalWeight).div(100));
 
         // console.log('allPendingReward: ', utils.formatEther(allPending));
         // await _logPendingReward();

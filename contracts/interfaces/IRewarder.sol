@@ -5,6 +5,9 @@ pragma solidity ^0.8.0;
 import "./IWooStakingManager.sol";
 
 interface IRewarder {
+    event ClaimOnRewarder(address indexed from, address indexed to, uint256 amount);
+    event SetStakingManagerOnRewarder(address indexed manager);
+
     function rewardToken() external view returns (address);
 
     function stakingManager() external view returns (IWooStakingManager);

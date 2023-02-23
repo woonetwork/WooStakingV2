@@ -47,6 +47,13 @@ import {TransferHelper} from "./util/TransferHelper.sol";
 // TODO: emit events
 //
 contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
+    event SetMPRewarderOnStakingManager(address indexed rewarder);
+    event SetWooPPOnStakingManager(address indexed wooPP);
+    event SetStakingProxyOnStakingManager(address indexed stakingProxy);
+    event AddRewarderOnStakingManager(address indexed rewarder);
+    event RemoveRewarderOnStakingManager(address indexed rewarder);
+    event ClaimRewardsOnStakingManager(address indexed user);
+
     using EnumerableSet for EnumerableSet.AddressSet;
 
     mapping(address => uint256) public wooBalance;
@@ -78,15 +85,19 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
     function setMPRewarder(address _rewarder) external onlyAdmin {
         mpRewarder = IRewarder(_rewarder);
         require(address(IRewarder(_rewarder).stakingManager()) == address(this));
+
+        emit SetMPRewarderOnStakingManager(_rewarder);
     }
 
     function addRewarder(address _rewarder) external onlyAdmin {
         require(address(IRewarder(_rewarder).stakingManager()) == address(this));
         rewarders.add(_rewarder);
+        emit AddRewarderOnStakingManager(_rewarder);
     }
 
     function removeRewarder(address _rewarder) external onlyAdmin {
         rewarders.remove(_rewarder);
+        emit RemoveRewarderOnStakingManager(_rewarder);
     }
 
     function _updateRewards(address _user) private {
@@ -115,6 +126,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         wooTotalBalance += _amount;
 
         _updateDebts(_user);
+
+        emit StakeWooOnStakingManager(_user, _amount);
     }
 
     function unstakeWoo(address _user, uint256 _amount) external onlyAdmin {
@@ -131,6 +144,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         uint256 burnAmount = (mpBalance[_user] * _amount) / wooPrevBalance;
         mpBalance[_user] -= burnAmount;
         mpTotalBalance -= burnAmount;
+
+        emit UnstakeWooOnStakingManager(_user, _amount);
     }
 
     function totalBalance(address _user) external view returns (uint256) {
@@ -163,10 +178,12 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
 
     function claimRewards() external {
         _claim(msg.sender);
+        emit ClaimRewardsOnStakingManager(msg.sender);
     }
 
     function claimRewards(address _user) external onlyAdmin {
         _claim(_user);
+        emit ClaimRewardsOnStakingManager(_user);
     }
 
     function _claim(address _user) private {
@@ -181,16 +198,20 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
     function compoundAll(address _user) external onlyAdmin {
         compoundMP(_user);
         compoundRewards(_user);
+        emit CompoundAllOnStakingManager(_user);
     }
 
     function compoundMP(address _user) public onlyAdmin {
         // claim auto updates the reward for the user
         mpRewarder.claim(_user, address(this));
+        emit CompoundMPOnStakingManager(_user);
     }
 
     function addMP(address _user, uint256 _amount) public onlyMpRewarder {
         mpBalance[_user] += _amount;
         mpTotalBalance += _amount;
+
+        emit AddMPOnStakingManager(_user, _amount);
     }
 
     function compoundRewards(address _user) public onlyAdmin {
@@ -208,15 +229,19 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
 
         TransferHelper.safeApprove(woo, address(stakingProxy), wooAmount);
         stakingProxy.stake(_user, wooAmount);
+
+        emit CompoundRewardsOnStakingManager(_user);
     }
 
     // --------------------- Admin Functions --------------------- //
 
     function setWooPP(address _wooPP) external onlyAdmin {
         wooPP = IWooPPV2(_wooPP);
+        emit SetWooPPOnStakingManager(_wooPP);
     }
 
     function setStakingProxy(address _proxy) external onlyAdmin {
         stakingProxy = IWooStakingProxy(_proxy);
+        emit SetStakingProxyOnStakingManager(_proxy);
     }
 }

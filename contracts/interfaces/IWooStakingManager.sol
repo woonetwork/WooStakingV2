@@ -6,6 +6,12 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IWooStakingManager {
     /* ----- Events ----- */
+    event StakeWooOnStakingManager(address indexed user, uint256 amount);
+    event UnstakeWooOnStakingManager(address indexed user, uint256 amount);
+    event AddMPOnStakingManager(address indexed user, uint256 amount);
+    event CompoundMPOnStakingManager(address indexed user);
+    event CompoundRewardsOnStakingManager(address indexed user);
+    event CompoundAllOnStakingManager(address indexed user);
 
     /* ----- State Variables ----- */
 
