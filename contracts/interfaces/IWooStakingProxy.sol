@@ -13,8 +13,6 @@ interface IWooStakingProxy {
 
     event CompoundOnProxy(address indexed user);
 
-    event AdminUpdated(address indexed addr, bool flag);
-
     /* ----- State Variables ----- */
 
     function controllerChainId() external view returns (uint16);
@@ -30,6 +28,8 @@ interface IWooStakingProxy {
     function estimateFees(uint8 _action, uint256 _amount) external view returns (uint256 messageFee);
 
     function stake(uint256 _amount) external payable;
+
+    function stake(address _user, uint256 _amount) external payable;
 
     function unstake(uint256 _amount) external payable;
 
