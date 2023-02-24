@@ -59,6 +59,11 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
         lastRewardBlock = block.number;
     }
 
+    modifier onlyStakingManager() {
+        require(_msgSender() == address(stakingManager), "BaseRewarder: !admin");
+        _;
+    }
+
     function totalWeight() public view virtual returns (uint256 weightAmount);
 
     function weight(address _user) public view virtual returns (uint256 rewardAmount);
@@ -138,5 +143,12 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
         updateReward();
         rewardPerBlock = _rewardPerBlock;
         emit SetRewardPerBlockOnRewarder(_rewardPerBlock);
+    }
+
+    function transfer(address _from, address _to) external onlyStakingManager {
+        rewardDebt[_to] += rewardDebt[_from];
+        rewardDebt[_from] = 0;
+        rewardClaimable[_to] += rewardClaimable[_from];
+        rewardClaimable[_from] = 0;
     }
 }

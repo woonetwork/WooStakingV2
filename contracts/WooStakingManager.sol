@@ -203,7 +203,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
 
     function compoundMP(address _user) public onlyAdmin {
         // claim auto updates the reward for the user
-        mpRewarder.claim(_user, address(this));
+        mpRewarder.claim(_user);
         emit CompoundMPOnStakingManager(_user);
     }
 
@@ -231,6 +231,19 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         stakingProxy.stake(_user, wooAmount);
 
         emit CompoundRewardsOnStakingManager(_user);
+    }
+
+    function transfer(address _from, address _to) external onlyAdmin {
+        unchecked {
+            for (uint256 i = 0; i < rewarders.length(); ++i) {
+                IRewarder _rewarder = IRewarder(rewarders.at(i));
+                _rewarder.transfer(_from, _to);
+            }
+        }
+        wooBalance[_to] += wooBalance[_from];
+        wooBalance[_from] = 0;
+        mpBalance[_to] += mpBalance[_from];
+        mpBalance[_from] = 0;
     }
 
     // --------------------- Admin Functions --------------------- //

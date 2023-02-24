@@ -116,58 +116,64 @@ describe("WooStakingManager tests", () => {
         await stakingManager.setMPRewarder(mpRewarder.address);
     });
 
-    // it("Init Tests", async () => {
-    //     expect(await stakingManager.woo()).to.be.eq(wooToken.address);
-    //     expect(await stakingManager.wooPP()).to.be.eq(wooPPv2.address);
-    //     expect(await stakingManager.stakingProxy()).to.be.eq(proxy.address);
-    //     expect(await stakingManager.owner()).to.be.eq(owner.address);
-    //     expect(await stakingManager.mpRewarder()).to.be.eq(mpRewarder.address);
-    // });
+    it("Init Tests", async () => {
+        expect(await stakingManager.woo()).to.be.eq(wooToken.address);
+        expect(await stakingManager.wooPP()).to.be.eq(wooPPv2.address);
+        expect(await stakingManager.stakingProxy()).to.be.eq(proxy.address);
+        expect(await stakingManager.owner()).to.be.eq(owner.address);
+        expect(await stakingManager.mpRewarder()).to.be.eq(mpRewarder.address);
+    });
 
-    // it("Stake Tests", async () => {
-    //     expect(await stakingManager.wooTotalBalance()).to.be.eq(0);
-    //     expect(await stakingManager.mpTotalBalance()).to.be.eq(0);
+    it("Stake Tests", async () => {
+        await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
+        await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
+        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
 
-    //     await stakingManager.stakeWoo(user1.address, utils.parseEther("10"));
-    //     await stakingManager.stakeWoo(user2.address, utils.parseEther("20"));
+        expect(await stakingManager.wooTotalBalance()).to.be.eq(0);
+        expect(await stakingManager.mpTotalBalance()).to.be.eq(0);
 
-    //     expect(await stakingManager.wooTotalBalance()).to.be.eq(utils.parseEther("30"));
-    //     expect(await stakingManager.mpTotalBalance()).to.be.eq(0);
+        await stakingManager.stakeWoo(user1.address, utils.parseEther("10"));
+        await stakingManager.stakeWoo(user2.address, utils.parseEther("20"));
 
-    //     await stakingManager.stakeWoo(user1.address, utils.parseEther("30"));
+        expect(await stakingManager.wooTotalBalance()).to.be.eq(utils.parseEther("30"));
+        expect(await stakingManager.mpTotalBalance()).to.be.eq(0);
 
-    //     expect(await stakingManager.wooTotalBalance()).to.be.eq(utils.parseEther("60"));
-    //     expect(await stakingManager.mpTotalBalance()).to.be.gt(0);  // NOTE: mp auto compounds
+        await stakingManager.stakeWoo(user1.address, utils.parseEther("30"));
 
-    //     expect(await stakingManager.wooBalance(user1.address)).to.be.eq(utils.parseEther("40"));
-    //     expect(await stakingManager.wooBalance(user2.address)).to.be.eq(utils.parseEther("20"));
-    // });
+        expect(await stakingManager.wooTotalBalance()).to.be.eq(utils.parseEther("60"));
+        expect(await stakingManager.mpTotalBalance()).to.be.gt(0);  // NOTE: mp auto compounds
 
-    // it("Unstake Tests", async () => {
-    //     expect(await stakingManager.wooTotalBalance()).to.be.eq(0);
-    //     expect(await stakingManager.mpTotalBalance()).to.be.eq(0);
+        expect(await stakingManager.wooBalance(user1.address)).to.be.eq(utils.parseEther("40"));
+        expect(await stakingManager.wooBalance(user2.address)).to.be.eq(utils.parseEther("20"));
+    });
 
-    //     await stakingManager.stakeWoo(user1.address, utils.parseEther("10"));
-    //     await stakingManager.stakeWoo(user2.address, utils.parseEther("20"));
-    //     await stakingManager.stakeWoo(user1.address, utils.parseEther("30"));
+    it("Unstake Tests", async () => {
+        await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
+        await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
+        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
+        
+        expect(await stakingManager.wooTotalBalance()).to.be.eq(0);
+        expect(await stakingManager.mpTotalBalance()).to.be.eq(0);
 
-    //     expect(await stakingManager.wooBalance(user1.address)).to.be.eq(utils.parseEther("40"));
-    //     expect(await stakingManager.wooBalance(user2.address)).to.be.eq(utils.parseEther("20"));
+        await stakingManager.stakeWoo(user1.address, utils.parseEther("10"));
+        await stakingManager.stakeWoo(user2.address, utils.parseEther("20"));
+        await stakingManager.stakeWoo(user1.address, utils.parseEther("30"));
 
-    //     await stakingManager.unstakeWoo(user1.address, utils.parseEther("10"));
-    //     await stakingManager.unstakeWoo(user2.address, utils.parseEther("20"));
+        expect(await stakingManager.wooBalance(user1.address)).to.be.eq(utils.parseEther("40"));
+        expect(await stakingManager.wooBalance(user2.address)).to.be.eq(utils.parseEther("20"));
 
-    //     expect(await stakingManager.wooBalance(user1.address)).to.be.eq(utils.parseEther("30"));
-    //     expect(await stakingManager.wooBalance(user2.address)).to.be.eq(utils.parseEther("0"));
+        await stakingManager.unstakeWoo(user1.address, utils.parseEther("10"));
+        await stakingManager.unstakeWoo(user2.address, utils.parseEther("20"));
 
-    //     expect(await stakingManager.wooTotalBalance()).to.be.eq(utils.parseEther("30"));
-    //     expect(await stakingManager.mpTotalBalance()).to.be.gt(0);  // mp auto compounds
+        expect(await stakingManager.wooBalance(user1.address)).to.be.eq(utils.parseEther("30"));
+        expect(await stakingManager.wooBalance(user2.address)).to.be.eq(utils.parseEther("0"));
 
-    //     await expect(stakingManager.unstakeWoo(user1.address, utils.parseEther("40"))).to.be.reverted;
-    //     await expect(stakingManager.unstakeWoo(user2.address, 1)).to.be.reverted;
-    // });
+        expect(await stakingManager.wooTotalBalance()).to.be.eq(utils.parseEther("30"));
+        expect(await stakingManager.mpTotalBalance()).to.be.gt(0);  // mp auto compounds
 
-
+        await expect(stakingManager.unstakeWoo(user1.address, utils.parseEther("40"))).to.be.reverted;
+        await expect(stakingManager.unstakeWoo(user2.address, 1)).to.be.reverted;
+    });
 
     it("pendingRewards Tests", async () => {
 

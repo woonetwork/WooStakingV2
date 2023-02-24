@@ -104,13 +104,13 @@ describe("MpRewarder tests", () => {
         // await _logPendingReward();
 
         // Verify the claim of pending reward
-        await mpRewarder["claim(address,address)"](user1.address, stakingManager.address);
+        await mpRewarder["claim(address,address)"](user1.address, user1.address);
         // await _logUserBals();
         expect(await stakingManager.mpBalance(user1.address)).to.be.gte(user1Pending);
         expect(await stakingManager.mpBalance(user.address)).to.be.equal(0);
         expect(await stakingManager.mpBalance(user2.address)).to.be.equal(0);
 
-        await mpRewarder["claim(address,address)"](user.address, stakingManager.address);
+        await mpRewarder["claim(address)"](user.address);
         expect(await stakingManager.mpBalance(user.address)).to.be.gte(userPending);
     });
 
