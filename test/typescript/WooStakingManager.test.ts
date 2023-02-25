@@ -148,10 +148,10 @@ describe("WooStakingManager tests", () => {
     });
 
     it("Unstake Tests", async () => {
-        await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
-        await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
-        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
-        
+        await rewarder1.setRewardPerBlock(utils.parseEther("20"));  // usdc 20
+        await rewarder2.setRewardPerBlock(utils.parseEther("1"));   // weth 1
+        await mpRewarder.setRewardRate(31536000 * 100);             // 1% per second
+
         expect(await stakingManager.wooTotalBalance()).to.be.eq(0);
         expect(await stakingManager.mpTotalBalance()).to.be.eq(0);
 
