@@ -6,12 +6,14 @@ let contractName = "WooStakingProxy";
 
 // Specify need before deploying contract
 
-const endpoint = "0x3c2269811836af69497E5F486A85D7316753cf62";
-const controller = "0x747f99D619D5612399010Ec5706F13e3345c4a9E";
-const want = "0xcAFcD85D8ca7Ad1e1C6F82F651fA15E33AEfD07b";
+const endpoint = "0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7";
+const chainid = 112;
+const controller = "0x3784A47D47593542903E3A319332e4719B8F95Da";
+const want = "0x6626c47c00F1D87902fc13EECfaC3ed06D5E8D8a";
+
 
 async function main() {
-  const args = [endpoint, controller, want];
+  const args = [endpoint, chainid, controller, want];
   const factory = await ethers.getContractFactory(contractName);
   const contract = await factory.deploy(...args);
   await contract.deployed();

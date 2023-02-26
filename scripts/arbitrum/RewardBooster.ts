@@ -2,15 +2,14 @@
 import { ethers, run } from "hardhat";
 
 // eslint-disable-next-line prefer-const
-let contractName = "WooStakingController";
+let contractName = "RewardBooster";
 
 // Specify need before deploying contract
 
-const endpoint = "0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7";
-const stakingManager = "0xba91ffD8a2B9F68231eCA6aF51623B3433A89b13";
+const mpRewarder = "0xba91ffD8a2B9F68231eCA6aF51623B3433A89b13";
 
 async function main() {
-  const args = [endpoint, stakingManager];
+  const args = [mpRewarder];
   const factory = await ethers.getContractFactory(contractName);
   const contract = await factory.deploy(...args);
   await contract.deployed();

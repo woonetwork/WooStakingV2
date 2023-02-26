@@ -6,8 +6,9 @@ let contractName = "SimpleRewarder";
 
 // Specify need before deploying contract
 
-const stakingManager = "";
-const tokenAddr = "";
+const stakingManager = "0xba91ffD8a2B9F68231eCA6aF51623B3433A89b13";
+const tokenAddr = "0x04068DA6C83AFCFA0e13ba15A6696662335D5B75"; // USDC
+// const tokenAddr = "0x74b23882a30290451A17c44f4F05243b6b58C76d"; // WETH
 
 async function main() {
   const args = [tokenAddr, stakingManager];
