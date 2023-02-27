@@ -144,11 +144,4 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
         rewardPerBlock = _rewardPerBlock;
         emit SetRewardPerBlockOnRewarder(_rewardPerBlock);
     }
-
-    function transfer(address _from, address _to) external onlyStakingManager {
-        rewardDebt[_to] += rewardDebt[_from];
-        rewardDebt[_from] = 0;
-        rewardClaimable[_to] += rewardClaimable[_from];
-        rewardClaimable[_from] = 0;
-    }
 }

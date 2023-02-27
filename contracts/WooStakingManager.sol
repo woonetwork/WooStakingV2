@@ -226,19 +226,6 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         emit CompoundRewardsOnStakingManager(_user);
     }
 
-    function transfer(address _from, address _to) external onlyAdmin {
-        unchecked {
-            for (uint256 i = 0; i < rewarders.length(); ++i) {
-                IRewarder _rewarder = IRewarder(rewarders.at(i));
-                _rewarder.transfer(_from, _to);
-            }
-        }
-        wooBalance[_to] += wooBalance[_from];
-        wooBalance[_from] = 0;
-        mpBalance[_to] += mpBalance[_from];
-        mpBalance[_from] = 0;
-    }
-
     // --------------------- Admin Functions --------------------- //
 
     function setWooPP(address _wooPP) external onlyAdmin {

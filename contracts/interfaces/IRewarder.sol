@@ -25,6 +25,4 @@ interface IRewarder {
     function updateRewardForUser(address _user) external;
 
     function updateDebtForUser(address _user) external;
-
-    function transfer(address _from, address _to) external;
 }

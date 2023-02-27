@@ -65,7 +65,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
     }
 
     modifier onlyStakingManager() {
-        require(_msgSender() == address(stakingManager), "BaseRewarder: !stakingManager");
+        require(_msgSender() == address(stakingManager), "MpRewarder: !stakingManager");
         _;
     }
 
@@ -166,12 +166,5 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
 
     function updateDebtForUser(address _user) public {
         rewardDebt[_user] = (weight(_user) * accTokenPerShare) / 1e18;
-    }
-
-    function transfer(address _from, address _to) external onlyStakingManager {
-        rewardDebt[_to] += rewardDebt[_from];
-        rewardDebt[_from] = 0;
-        rewardClaimable[_to] += rewardClaimable[_from];
-        rewardClaimable[_from] = 0;
     }
 }
