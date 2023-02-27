@@ -61,7 +61,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
     IRewarder public mpRewarder; // Record and distribute MP rewards
     EnumerableSet.AddressSet private rewarders; // Other general rewards (e.g. usdc, eth, op, etc)
 
-    IWooStakingCompounder compounder;
+    IWooStakingCompounder public compounder;
 
     constructor(address _woo, address _wooPP, address _stakingProxy) {
         woo = _woo;

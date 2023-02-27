@@ -65,7 +65,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
     }
 
     modifier onlyStakingManager() {
-        require(_msgSender() == address(stakingManager), "BaseRewarder: !admin");
+        require(_msgSender() == address(stakingManager), "BaseRewarder: !stakingManager");
         _;
     }
 
