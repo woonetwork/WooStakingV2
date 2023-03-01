@@ -36,16 +36,16 @@ import { deployContract, deployMockContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 const { mine, time, mineUpTo } = require("@nomicfoundation/hardhat-network-helpers");
 
-import { IWooStakingProxy, MpRewarder, RewardBooster, SimpleRewarder, TestWooPP, WooStakingManager } from "../../typechain";
+import { IWooStakingProxy, MpRewarder, RewardBooster, SimpleRewarder, TestWooPP, WooStakingCompounder, WooStakingManager } from "../../typechain";
 import SimpleRewarderArtifact from "../../artifacts/contracts/rewarders/SimpleRewarder.sol/SimpleRewarder.json";
 import MpRewarderArtifact from "../../artifacts/contracts/rewarders/MpRewarder.sol/MpRewarder.json";
 import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManager.sol/WooStakingManager.json";
 import TestTokenArtifact from "../../artifacts/contracts/test/TestToken.sol/TestToken.json";
 import WooStakingProxyArtifact from "../../artifacts/contracts/WooStakingProxy.sol/WooStakingProxy.json";
 import IWooPPV2Artifact from "../../artifacts/contracts/interfaces/IWooPPV2.sol/IWooPPV2.json";
-import WooStakingProxyArtifact from "../../artifacts/contracts/rewarders/MpRewarder.sol/MpRewarder.json";
 import RewardBoosterArtifact from "../../artifacts/contracts/rewarders/RewardBooster.sol/RewardBooster.json";
 import TestWooPPArtifact from "../../artifacts/contracts/test/TestWooPP.sol/TestWooPP.json";
+import WooStakingCompounderArtifact from "../../artifacts/contracts/WooStakingCompounder.sol/WooStakingCompounder.json";
 import { latest } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 
 
@@ -59,6 +59,7 @@ describe("WooStakingManager tests", () => {
     let rewarder2: SimpleRewarder;
     let stakingManager: WooStakingManager;
     let testWooPP: TestWooPP;
+    let stakingCompounder: WooStakingCompounder;
 
     let wooPPv2: Contract;
     let proxy: Contract;
@@ -114,6 +115,9 @@ describe("WooStakingManager tests", () => {
         await mpRewarder.setBooster(booster.address);
 
         await stakingManager.setMPRewarder(mpRewarder.address);
+
+        stakingCompounder = (await deployContract(owner, WooStakingCompounderArtifact, [stakingManager.address])) as WooStakingCompounder;
+        await stakingManager.setCompounder(stakingCompounder.address);
     });
 
     it("Init Tests", async () => {
@@ -263,6 +267,27 @@ describe("WooStakingManager tests", () => {
 
         await _logUserPending();
         expect(await usdcToken.balanceOf(user2.address)).to.be.eq(user2Bal);
+    });
+
+    it("CoolDown Tests", async () => {
+        await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
+        await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
+        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
+        await stakingManager.stakeWoo(owner.address, utils.parseEther("20"));
+        await mine(5);
+        await _logPending(owner.address, "owner");
+        await stakingManager["claimRewards()"]();
+        await mine(5);
+        await _logPending(owner.address, "owner");
+        await stakingCompounder.addUser();
+        await expect(stakingManager["claimRewards()"]()).to.be.revertedWith(
+            "WooStakingManager: !COMPOUND"
+        );
+        await mine(10);
+        await stakingCompounder.setCooldownDuration(2);
+        await stakingCompounder.removeUser();
+        await _logPending(owner.address, "owner");
+        await stakingManager["claimRewards()"]();
     });
 
     async function _logUserWoo() {
