@@ -76,7 +76,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
 
     function estimateFees(uint8 _action, uint256 _amount) public view override returns (uint256 messageFee) {
         bytes memory payload = abi.encode(msg.sender, _action, _amount);
-        bytes memory adapterParams = abi.encodePacked(uint16(2), actionToDstGas[_action], uint256(0), address(0x0));
+        bytes memory adapterParams = abi.encodePacked(uint16(2), actionToDstGas[_action], uint256(0), controller);
         (messageFee, ) = lzEndpoint.estimateFees(controllerChainId, controller, payload, false, adapterParams);
     }
 
@@ -124,7 +124,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         require(msg.value > 0, "WooStakingProxy: msg.value is 0");
 
         bytes memory payload = abi.encode(user, _action, _amount);
-        bytes memory adapterParams = abi.encodePacked(uint16(2), actionToDstGas[_action], uint256(0), address(0x0));
+        bytes memory adapterParams = abi.encodePacked(uint16(2), actionToDstGas[_action], uint256(0), controller);
 
         _lzSend(
             controllerChainId, // destination chainId
