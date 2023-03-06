@@ -59,6 +59,11 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
         lastRewardBlock = block.number;
     }
 
+    modifier onlyStakingManager() {
+        require(_msgSender() == address(stakingManager), "BaseRewarder: !stakingManager");
+        _;
+    }
+
     function totalWeight() public view virtual returns (uint256 weightAmount);
 
     function weight(address _user) public view virtual returns (uint256 rewardAmount);

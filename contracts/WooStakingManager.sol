@@ -37,6 +37,7 @@ pragma solidity ^0.8.4;
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import {IRewarder} from "./interfaces/IRewarder.sol";
+import {IWooStakingCompounder} from "./interfaces/IWooStakingCompounder.sol";
 import {IWooPPV2} from "./interfaces/IWooPPV2.sol";
 import {IWooStakingManager} from "./interfaces/IWooStakingManager.sol";
 import {IWooStakingProxy} from "./interfaces/IWooStakingProxy.sol";
@@ -44,16 +45,7 @@ import {IWooStakingProxy} from "./interfaces/IWooStakingProxy.sol";
 import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 import {TransferHelper} from "./util/TransferHelper.sol";
 
-// TODO: emit events
-//
 contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
-    event SetMPRewarderOnStakingManager(address indexed rewarder);
-    event SetWooPPOnStakingManager(address indexed wooPP);
-    event SetStakingProxyOnStakingManager(address indexed stakingProxy);
-    event AddRewarderOnStakingManager(address indexed rewarder);
-    event RemoveRewarderOnStakingManager(address indexed rewarder);
-    event ClaimRewardsOnStakingManager(address indexed user);
-
     using EnumerableSet for EnumerableSet.AddressSet;
 
     mapping(address => uint256) public wooBalance;
@@ -68,6 +60,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
 
     IRewarder public mpRewarder; // Record and distribute MP rewards
     EnumerableSet.AddressSet private rewarders; // Other general rewards (e.g. usdc, eth, op, etc)
+
+    IWooStakingCompounder public compounder;
 
     constructor(address _woo, address _wooPP, address _stakingProxy) {
         woo = _woo;
@@ -174,21 +168,20 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         }
     }
 
-    // TODO: add get rewarder array method
-
     function claimRewards() external {
-        _claim(msg.sender);
-        emit ClaimRewardsOnStakingManager(msg.sender);
+        address _user = msg.sender;
+        require(!compounder.contains(_user), "WooStakingManager: !COMPOUND");
+        _claim(_user);
+        emit ClaimRewardsOnStakingManager(_user);
     }
 
     function claimRewards(address _user) external onlyAdmin {
+        // NOTE: admin forced claim reward can bypass the auto compounding.
         _claim(_user);
         emit ClaimRewardsOnStakingManager(_user);
     }
 
     function _claim(address _user) private {
-        // compoundMP(_user);
-
         for (uint256 i = 0; i < rewarders.length(); ++i) {
             IRewarder _rewarder = IRewarder(rewarders.at(i));
             _rewarder.claim(_user);
@@ -202,8 +195,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
     }
 
     function compoundMP(address _user) public onlyAdmin {
-        // claim auto updates the reward for the user
-        mpRewarder.claim(_user, address(this));
+        // NOTE: claim auto updates the reward for the user
+        mpRewarder.claim(_user);
         emit CompoundMPOnStakingManager(_user);
     }
 
@@ -243,5 +236,9 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
     function setStakingProxy(address _proxy) external onlyAdmin {
         stakingProxy = IWooStakingProxy(_proxy);
         emit SetStakingProxyOnStakingManager(_proxy);
+    }
+
+    function setCompounder(address _compounder) external onlyAdmin {
+        compounder = IWooStakingCompounder(_compounder);
     }
 }

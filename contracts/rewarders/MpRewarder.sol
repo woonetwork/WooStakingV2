@@ -64,6 +64,11 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
         lastRewardTs = block.timestamp;
     }
 
+    modifier onlyStakingManager() {
+        require(_msgSender() == address(stakingManager), "MpRewarder: !stakingManager");
+        _;
+    }
+
     function totalWeight() public view returns (uint256) {
         return stakingManager.wooTotalBalance();
     }
@@ -75,10 +80,9 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
     }
 
     function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
-        require(address(stakingManager) == _to, "RESTRICTED_TO_STAKING_MANAGER");
         updateRewardForUser(_user);
         rewardAmount = rewardClaimable[_user];
-        stakingManager.addMP(_user, rewardAmount);
+        stakingManager.addMP(_to, rewardAmount);
         rewardClaimable[_user] = 0;
         totalRewardClaimable -= rewardAmount;
     }
