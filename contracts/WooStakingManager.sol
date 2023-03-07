@@ -104,10 +104,10 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
     }
 
     function _updateDebts(address _user) private {
-        mpRewarder.updateDebtForUser(_user);
+        mpRewarder.clearRewardToDebt(_user);
         unchecked {
             for (uint256 i = 0; i < rewarders.length(); ++i) {
-                IRewarder(rewarders.at(i)).updateDebtForUser(_user);
+                IRewarder(rewarders.at(i)).clearRewardToDebt(_user);
             }
         }
     }
@@ -134,7 +134,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
 
         _updateDebts(_user);
 
-        // remove the proportional amount of MP tokens, based on amount / wooBalance
+        // When unstaking, remove the proportional amount of MP tokens,
+        // based on amount / wooBalance
         uint256 burnAmount = (mpBalance[_user] * _amount) / wooPrevBalance;
         mpBalance[_user] -= burnAmount;
         mpTotalBalance -= burnAmount;
@@ -176,7 +177,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
     }
 
     function claimRewards(address _user) external onlyAdmin {
-        // NOTE: admin forced claim reward can bypass the auto compounding.
+        // NOTE: admin forced claim reward can bypass the auto compounding, by design.
         _claim(_user);
         emit ClaimRewardsOnStakingManager(_user);
     }
@@ -208,7 +209,6 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
     }
 
     function compoundRewards(address _user) public onlyAdmin {
-        // TODO: attention! claim triggers updateReward
         uint256 wooAmount = 0;
         address selfAddr = address(this);
         for (uint256 i = 0; i < rewarders.length(); ++i) {

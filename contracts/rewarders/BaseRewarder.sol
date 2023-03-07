@@ -88,7 +88,6 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
     }
 
     function claim(address _user) external onlyAdmin returns (uint256 rewardAmount) {
-        // TODO: double check the _user is the receiver address
         rewardAmount = _claim(_user, _user);
         emit ClaimOnRewarder(_user, _user, rewardAmount);
     }
@@ -135,7 +134,7 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
         rewardDebt[_user] = accUserReward;
     }
 
-    function updateDebtForUser(address _user) public {
+    function clearRewardToDebt(address _user) public onlyStakingManager {
         rewardDebt[_user] = (weight(_user) * accTokenPerShare) / 1e18;
     }
 

@@ -98,7 +98,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
         uint256 _tokenPerShare = accTokenPerShare;
         if (block.timestamp > lastRewardTs && _totalWeight != 0) {
             // 1 year = 31,536,000 seconds
-            uint256 rewards = ((block.timestamp - lastRewardTs) * totalWeight() * rewardRate) / 10000 / 31536000;
+            uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / 10000 / 31536000;
             _tokenPerShare += (rewards * 1e18) / _totalWeight;
         }
 
@@ -164,7 +164,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
         rewardDebt[_user] = accUserReward;
     }
 
-    function updateDebtForUser(address _user) public {
+    function clearRewardToDebt(address _user) public onlyStakingManager {
         rewardDebt[_user] = (weight(_user) * accTokenPerShare) / 1e18;
     }
 }

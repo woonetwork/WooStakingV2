@@ -54,6 +54,5 @@ contract SimpleRewarder is BaseRewarder {
         TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
         totalRewardClaimable -= rewardAmount;
         rewardClaimable[_user] = 0;
-        // updateDebtForUser(_user); // TODO: needless
     }
 }

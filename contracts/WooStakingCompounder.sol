@@ -73,8 +73,7 @@ contract WooStakingCompounder is BaseAdminOperation {
         uint256 _ts = addTimestamps[_user];
         if (_ts > 0) {
             if (_ts > block.timestamp) {
-                // NOTE: illegal case, just ignore it!
-                return;
+                return; // may happen in certain chains; check it here to avoid math overflow
             }
             require(block.timestamp - _ts >= cooldownDuration, "WooStakingCompounder: STILL_IN_COOL_DOWN");
         }
@@ -112,7 +111,7 @@ contract WooStakingCompounder is BaseAdminOperation {
     }
 
     function compound(uint256 start, uint256 end) external onlyAdmin {
-        // NOTE: [start, end)
+        // range: [start, end)
         unchecked {
             for (uint256 i = start; i < end; ++i) {
                 stakingManager.compoundAll(users.at(i));

@@ -60,8 +60,6 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
     function setRatio(address[] memory users, uint256 ratio) external onlyAdmin {
         unchecked {
             for (uint256 i = 0; i < users.length; ++i) {
-                // TODO: check the ratio difference?
-
                 mpRewarder.updateRewardForUser(users[i]);
                 boostRatio[users[i]] = ratio;
             }

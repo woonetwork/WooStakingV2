@@ -24,5 +24,5 @@ interface IRewarder {
 
     function updateRewardForUser(address _user) external;
 
-    function updateDebtForUser(address _user) external;
+    function clearRewardToDebt(address _user) external;
 }
