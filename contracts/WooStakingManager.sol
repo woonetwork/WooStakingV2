@@ -35,6 +35,7 @@ pragma solidity ^0.8.4;
 */
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import {IRewarder} from "./interfaces/IRewarder.sol";
 import {IWooStakingCompounder} from "./interfaces/IWooStakingCompounder.sol";
@@ -45,7 +46,7 @@ import {IWooStakingProxy} from "./interfaces/IWooStakingProxy.sol";
 import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 import {TransferHelper} from "./util/TransferHelper.sol";
 
-contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
+contract WooStakingManager is IWooStakingManager, BaseAdminOperation, ReentrancyGuard {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     mapping(address => uint256) public wooBalance;
@@ -169,7 +170,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation {
         }
     }
 
-    function claimRewards() external {
+    function claimRewards() external nonReentrant {
         address _user = msg.sender;
         require(!compounder.contains(_user), "WooStakingManager: !COMPOUND");
         _claim(_user);
