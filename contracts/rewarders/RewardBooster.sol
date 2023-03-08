@@ -52,6 +52,7 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
     function setRatios(address[] memory users, uint256[] memory ratios) external onlyAdmin {
         unchecked {
             for (uint256 i = 0; i < users.length; ++i) {
+                mpRewarder.updateRewardForUser(users[i]);
                 boostRatio[users[i]] = ratios[i];
             }
         }
