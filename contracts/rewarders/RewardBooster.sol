@@ -43,7 +43,7 @@ import {TransferHelper} from "../util/TransferHelper.sol";
 contract RewardBooster is IRewardBooster, BaseAdminOperation {
     mapping(address => uint256) public boostRatio;
 
-    IRewarder mpRewarder;
+    IRewarder public mpRewarder;
 
     constructor(address _mpRewarder) {
         mpRewarder = IRewarder(_mpRewarder);
@@ -64,5 +64,10 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
                 boostRatio[users[i]] = ratio;
             }
         }
+    }
+
+    function setMPRewarder(address _rewarder) external onlyAdmin {
+        mpRewarder = IRewarder(_rewarder);
+        emit SetMPRewarderOnRewardBooster(_rewarder);
     }
 }
