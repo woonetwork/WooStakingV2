@@ -31,7 +31,9 @@ contract TestWooPP is IWooPPV2 {
         console.log("fromToken: %s fromAmount: %s realToAmount: %s",
             fromToken, fromAmount, realToAmount);
 
-        TransferHelper.safeTransferFrom(fromToken, msg.sender, to, fromAmount);
+        // NOTE: like uniswap pair, trade proactively pushes the fund here.
+        // TransferHelper.safeTransferFrom(fromToken, msg.sender, to, fromAmount);
+
         TransferHelper.safeTransfer(toToken, msg.sender, realToAmount);
     }
 

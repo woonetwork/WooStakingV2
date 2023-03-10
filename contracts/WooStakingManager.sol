@@ -214,10 +214,14 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         address selfAddr = address(this);
         for (uint256 i = 0; i < rewarders.length(); ++i) {
             IRewarder _rewarder = IRewarder(rewarders.at(i));
-            uint256 rewardAmount = _rewarder.claim(_user, selfAddr); // claim auto update reward for the user.
-            TransferHelper.safeApprove(_rewarder.rewardToken(), address(wooPP), rewardAmount);
-            if (_rewarder.rewardToken() != woo) {
-                wooAmount += wooPP.swap(_rewarder.rewardToken(), woo, rewardAmount, 0, selfAddr, selfAddr);
+            if (_rewarder.rewardToken() == woo) {
+                wooAmount += _rewarder.claim(_user, selfAddr);
+            } else {
+                // claim and swap to WOO token
+                uint256 rewardAmount = _rewarder.claim(_user, address(wooPP));
+                if (rewardAmount > 0) {
+                    wooAmount += wooPP.swap(_rewarder.rewardToken(), woo, rewardAmount, 0, selfAddr, selfAddr);
+                }
             }
         }
 

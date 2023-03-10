@@ -253,7 +253,6 @@ describe("WooStakingManager tests", () => {
         await _logUserPending();
         await stakingManager.compoundRewards(user1.address);
 
-        
         console.log("Compound user1 woo");
         await _logUserBals();
         await _logUserWoo();
