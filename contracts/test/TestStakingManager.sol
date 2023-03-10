@@ -53,7 +53,11 @@ contract TestStakingManager is IWooStakingManager, BaseAdminOperation {
         mpTotalBalance += _amount;
     }
 
-    function compoundRewards(address _user) external {}
+    function compoundRewards(address _user) external payable {}
 
-    function compoundAll(address _user) external {}
+    function compoundAll(address _user) external payable {}
+
+    function pendingRewards(address _user) external view returns (
+        uint256 mpRewardAmount, address[] memory rewardTokens, uint256[] memory amounts
+    ) {}
 }
