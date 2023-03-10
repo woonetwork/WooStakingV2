@@ -58,7 +58,7 @@ abstract contract BaseAdminOperation is Pausable, Ownable {
         _unpause();
     }
 
-    function setAdmin(address addr, bool flag) external onlyAdmin {
+    function setAdmin(address addr, bool flag) public onlyAdmin {
         isAdmin[addr] = flag;
         emit AdminUpdated(addr, flag);
     }

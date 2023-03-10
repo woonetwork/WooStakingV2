@@ -174,6 +174,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         address _user = msg.sender;
         require(!compounder.contains(_user), "WooStakingManager: !COMPOUND");
         _claim(_user);
+
         emit ClaimRewardsOnStakingManager(_user);
     }
 
@@ -190,7 +191,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         }
     }
 
-    function compoundAll(address _user) external onlyAdmin {
+    function compoundAll(address _user) external payable onlyAdmin {
         compoundMP(_user);
         compoundRewards(_user);
         emit CompoundAllOnStakingManager(_user);
@@ -209,7 +210,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit AddMPOnStakingManager(_user, _amount);
     }
 
-    function compoundRewards(address _user) public onlyAdmin {
+    function compoundRewards(address _user) public payable onlyAdmin {
         uint256 wooAmount = 0;
         address selfAddr = address(this);
         for (uint256 i = 0; i < rewarders.length(); ++i) {
@@ -226,7 +227,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         }
 
         TransferHelper.safeApprove(woo, address(stakingProxy), wooAmount);
-        stakingProxy.stake(_user, wooAmount);
+        stakingProxy.stake{value: msg.value}(_user, wooAmount);
 
         emit CompoundRewardsOnStakingManager(_user);
     }

@@ -57,6 +57,7 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
         rewardToken = _rewardToken;
         stakingManager = IWooStakingManager(_stakingManager);
         lastRewardBlock = block.number;
+        setAdmin(_stakingManager, true);
     }
 
     modifier onlyStakingManager() {

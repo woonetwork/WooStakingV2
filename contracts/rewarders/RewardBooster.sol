@@ -58,6 +58,8 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
 
     constructor(address _mpRewarder, address _compounder) {
         base = 10000;
+        volumeBR = 13000; // 130%
+        tvlBR = 13000; // 130%
         autoCompoundBR = 15000; // 150%
         mpRewarder = IRewarder(_mpRewarder);
         compounder = IWooStakingCompounder(_compounder);

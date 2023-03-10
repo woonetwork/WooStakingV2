@@ -49,12 +49,12 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
     uint8 public constant ACTION_UNSTAKE = 2;
     uint8 public constant ACTION_COMPOUND = 3;
 
-    uint16 public override controllerChainId;
-    address public override controller;
-    IERC20 public immutable override want;
+    uint16 public controllerChainId;
+    address public controller;
+    IERC20 public immutable want;
 
     mapping(uint8 => uint256) public actionToDstGas;
-    mapping(address => uint256) public override balances;
+    mapping(address => uint256) public balances;
 
     constructor(
         address _endpoint,
@@ -74,17 +74,17 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         actionToDstGas[ACTION_COMPOUND] = 600000;
     }
 
-    function estimateFees(uint8 _action, uint256 _amount) public view override returns (uint256 messageFee) {
+    function estimateFees(uint8 _action, uint256 _amount) public view returns (uint256 messageFee) {
         bytes memory payload = abi.encode(msg.sender, _action, _amount);
         bytes memory adapterParams = abi.encodePacked(uint16(2), actionToDstGas[_action], uint256(0), address(0x0));
         (messageFee, ) = lzEndpoint.estimateFees(controllerChainId, controller, payload, false, adapterParams);
     }
 
-    function stake(uint256 _amount) external payable override whenNotPaused nonReentrant {
+    function stake(uint256 _amount) external payable whenNotPaused nonReentrant {
         _stake(msg.sender, _amount);
     }
 
-    function stake(address _user, uint256 _amount) external payable override whenNotPaused nonReentrant {
+    function stake(address _user, uint256 _amount) external payable whenNotPaused nonReentrant {
         _stake(_user, _amount);
     }
 
@@ -96,11 +96,11 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         _sendMessage(_user, ACTION_STAKE, _amount);
     }
 
-    function unstake(uint256 _amount) external payable override whenNotPaused nonReentrant {
+    function unstake(uint256 _amount) external payable whenNotPaused nonReentrant {
         _unstake(msg.sender, _amount);
     }
 
-    function unstakeAll() external payable override whenNotPaused nonReentrant {
+    function unstakeAll() external payable whenNotPaused nonReentrant {
         _unstake(msg.sender, balances[msg.sender]);
     }
 
@@ -112,7 +112,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         _sendMessage(user, ACTION_UNSTAKE, _amount);
     }
 
-    function compound() external payable override whenNotPaused nonReentrant {
+    function compound() external payable whenNotPaused nonReentrant {
         address user = msg.sender;
         emit CompoundOnProxy(user);
         _sendMessage(user, ACTION_COMPOUND, 0);

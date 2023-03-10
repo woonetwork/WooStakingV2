@@ -62,6 +62,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
         rewardToken = _rewardToken;
         stakingManager = IWooStakingManager(_stakingManager);
         lastRewardTs = block.timestamp;
+        setAdmin(_stakingManager, true);
     }
 
     modifier onlyStakingManager() {
