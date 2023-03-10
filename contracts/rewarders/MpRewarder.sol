@@ -76,7 +76,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
     function weight(address _user) public view returns (uint256) {
         uint256 ratio = booster.boostRatio(_user);
         uint256 wooBal = stakingManager.wooBalance(_user);
-        return ratio == 0 ? wooBal : (wooBal * ratio) / 1e18;
+        return ratio == 0 ? wooBal : (wooBal * ratio) / booster.base();
     }
 
     function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
@@ -166,5 +166,9 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
 
     function clearRewardToDebt(address _user) public onlyStakingManager {
         rewardDebt[_user] = (weight(_user) * accTokenPerShare) / 1e18;
+    }
+
+    function boostedRewardRate(address _user) external view returns (uint256) {
+        return (rewardRate * booster.boostRatio(_user)) / booster.base();
     }
 }

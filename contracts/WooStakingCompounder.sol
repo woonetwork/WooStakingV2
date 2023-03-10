@@ -41,8 +41,9 @@ import {TransferHelper} from "./util/TransferHelper.sol";
 
 import {IRewarder} from "./interfaces/IRewarder.sol";
 import {IWooStakingManager} from "./interfaces/IWooStakingManager.sol";
+import {IWooStakingCompounder} from "./interfaces/IWooStakingCompounder.sol";
 
-contract WooStakingCompounder is BaseAdminOperation {
+contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
     event AddUser(address indexed user);
     event RemoveUser(address indexed user);
 
