@@ -39,36 +39,67 @@ import {IRewardBooster} from "../interfaces/IRewardBooster.sol";
 import {IRewarder} from "../interfaces/IRewarder.sol";
 import {BaseAdminOperation} from "../BaseAdminOperation.sol";
 import {TransferHelper} from "../util/TransferHelper.sol";
+import {IWooStakingCompounder} from "../interfaces/IWooStakingCompounder.sol";
 
 contract RewardBooster is IRewardBooster, BaseAdminOperation {
+    // BR = Boost Ratio,
+    // In unit 10000th: 100: 1%, 5000: 50%
+    uint256 public volumeBR;
+    uint256 public tvlBR;
+    uint256 public autoCompoundBR; // only applied to controller chain
+
     mapping(address => uint256) public boostRatio;
+
+    uint256 public immutable base; // Default: 10000th, 100: 1%, 5000: 50%
 
     IRewarder public mpRewarder;
 
-    constructor(address _mpRewarder) {
+    IWooStakingCompounder public compounder;
+
+    constructor(address _mpRewarder, address _compounder) {
+        base = 10000;
+        autoCompoundBR = 15000; // 150%
         mpRewarder = IRewarder(_mpRewarder);
+        compounder = IWooStakingCompounder(_compounder);
     }
 
-    function setRatios(address[] memory users, uint256[] memory ratios) external onlyAdmin {
+    function setUserRatios(address[] memory users, bool[] memory volFlags, bool[] memory tvlFlags) external onlyAdmin {
         unchecked {
             for (uint256 i = 0; i < users.length; ++i) {
-                mpRewarder.updateRewardForUser(users[i]);
-                boostRatio[users[i]] = ratios[i];
-            }
-        }
-    }
-
-    function setRatio(address[] memory users, uint256 ratio) external onlyAdmin {
-        unchecked {
-            for (uint256 i = 0; i < users.length; ++i) {
-                mpRewarder.updateRewardForUser(users[i]);
-                boostRatio[users[i]] = ratio;
+                address _user = users[i];
+                mpRewarder.updateRewardForUser(_user);
+                boostRatio[_user] =
+                    ((volFlags[i] ? volumeBR : base) *
+                        (tvlFlags[i] ? tvlBR : base) *
+                        (compounder.contains(_user) ? autoCompoundBR : base)) /
+                    base /
+                    base;
             }
         }
     }
 
     function setMPRewarder(address _rewarder) external onlyAdmin {
         mpRewarder = IRewarder(_rewarder);
-        emit SetMPRewarderOnRewardBooster(_rewarder);
+        emit SetMPRewarder(_rewarder);
+    }
+
+    function setAutoCompounder(address _compounder) external onlyAdmin {
+        compounder = IWooStakingCompounder(_compounder);
+        emit SetAutoCompounder(_compounder);
+    }
+
+    function setVolumeBR(uint256 _br) external onlyAdmin {
+        volumeBR = _br;
+        emit SetVolumeBR(_br);
+    }
+
+    function setTvlBR(uint256 _br) external onlyAdmin {
+        tvlBR = _br;
+        emit SetTvlBR(_br);
+    }
+
+    function setAutoCompoundBR(uint256 _br) external onlyAdmin {
+        autoCompoundBR = _br;
+        emit SetAutoCompoundBR(_br);
     }
 }

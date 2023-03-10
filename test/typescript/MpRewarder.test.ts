@@ -42,6 +42,7 @@ import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManag
 import TestTokenArtifact from "../../artifacts/contracts/test/TestToken.sol/TestToken.json";
 import TestStakingManagerArtifact from "../../artifacts/contracts/test/TestStakingManager.sol/TestStakingManager.json";
 import RewardBoosterArtifact from "../../artifacts/contracts/rewarders/RewardBooster.sol/RewardBooster.json";
+import IWooStakingCompounder from "../../artifacts/contracts/interfaces/IWooStakingCompounder.sol/IWooStakingCompounder.json";
 
 
 describe("MpRewarder tests", () => {
@@ -51,6 +52,7 @@ describe("MpRewarder tests", () => {
 
     let mpRewarder: MpRewarder;
     let booster: RewardBooster;
+    let compounder: Contract;
     let stakingManager: WooStakingManager;
     let user: SignerWithAddress;
     let user1: SignerWithAddress;
@@ -60,12 +62,17 @@ describe("MpRewarder tests", () => {
 
     before(async () => {
         [owner] = await ethers.getSigners();
+
         stakingManager = (await deployContract(owner, TestStakingManagerArtifact, [])) as WooStakingManager;
         mpToken = await deployContract(owner, TestTokenArtifact, []);
         await mpToken.mint(owner.address, utils.parseEther("100000"));
+
+        compounder = await deployMockContract(owner, IWooStakingCompounder.abi);
+        await compounder.mock.contains.returns(true);
+
         mpRewarder = (await deployContract(owner, MpRewarderArtifact, [mpToken.address, stakingManager.address])) as MpRewarder;
         await mpToken.mint(mpRewarder.address, utils.parseEther("100000"));
-        booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address])) as RewardBooster;
+        booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address])) as RewardBooster;
         await mpRewarder.setBooster(booster.address);
         await stakingManager.setMPRewarder(mpRewarder.address);
     });

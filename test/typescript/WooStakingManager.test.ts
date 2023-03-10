@@ -46,6 +46,7 @@ import IWooPPV2Artifact from "../../artifacts/contracts/interfaces/IWooPPV2.sol/
 import RewardBoosterArtifact from "../../artifacts/contracts/rewarders/RewardBooster.sol/RewardBooster.json";
 import TestWooPPArtifact from "../../artifacts/contracts/test/TestWooPP.sol/TestWooPP.json";
 import WooStakingCompounderArtifact from "../../artifacts/contracts/WooStakingCompounder.sol/WooStakingCompounder.json";
+import IWooStakingCompounder from "../../artifacts/contracts/interfaces/IWooStakingCompounder.sol/IWooStakingCompounder.json";
 import { latest } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 
 
@@ -63,6 +64,7 @@ describe("WooStakingManager tests", () => {
 
     let wooPPv2: Contract;
     let proxy: Contract;
+    let compounder: Contract;
 
     let user: SignerWithAddress;
     let user1: SignerWithAddress;
@@ -80,6 +82,9 @@ describe("WooStakingManager tests", () => {
 
         wooPPv2 = await deployMockContract(owner, IWooPPV2Artifact.abi);
         await wooPPv2.mock.swap.returns(10000);
+
+        compounder = await deployMockContract(owner, IWooStakingCompounder.abi);
+        await compounder.mock.contains.returns(true);
 
         testWooPP = (await deployContract(owner, TestWooPPArtifact, [])) as TestWooPP;
         await testWooPP.setPrice(usdcToken.address, utils.parseEther("1"));
@@ -111,7 +116,7 @@ describe("WooStakingManager tests", () => {
         mpRewarder = (await deployContract(owner, MpRewarderArtifact, [wooToken.address, stakingManager.address])) as MpRewarder;
         await mpRewarder.setAdmin(stakingManager.address, true);
 
-        booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address])) as RewardBooster;
+        booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address])) as RewardBooster;
         await mpRewarder.setBooster(booster.address);
 
         await stakingManager.setMPRewarder(mpRewarder.address);
@@ -131,7 +136,7 @@ describe("WooStakingManager tests", () => {
     it("Stake Tests", async () => {
         await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
         await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
-        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
+        await mpRewarder.setRewardRate(31536000 * 100);                 // 1% per second
 
         expect(await stakingManager.wooTotalBalance()).to.be.eq(0);
         expect(await stakingManager.mpTotalBalance()).to.be.eq(0);
@@ -253,7 +258,6 @@ describe("WooStakingManager tests", () => {
         await _logUserPending();
         await stakingManager.compoundRewards(user1.address);
 
-        
         console.log("Compound user1 woo");
         await _logUserBals();
         await _logUserWoo();

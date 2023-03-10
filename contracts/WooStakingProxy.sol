@@ -69,9 +69,9 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         controller = _controller;
         want = IERC20(_want);
 
-        actionToDstGas[ACTION_STAKE] = 200000;
-        actionToDstGas[ACTION_UNSTAKE] = 200000;
-        actionToDstGas[ACTION_COMPOUND] = 200000;
+        actionToDstGas[ACTION_STAKE] = 600000;
+        actionToDstGas[ACTION_UNSTAKE] = 600000;
+        actionToDstGas[ACTION_COMPOUND] = 600000;
     }
 
     function estimateFees(uint8 _action, uint256 _amount) public view override returns (uint256 messageFee) {
