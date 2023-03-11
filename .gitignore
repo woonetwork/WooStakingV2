@@ -12,4 +12,5 @@ artifacts
 abis/
 
 package-lock.json
+staking_contracts.json
 
