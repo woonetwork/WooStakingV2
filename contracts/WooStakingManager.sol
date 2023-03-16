@@ -115,7 +115,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     function stakeWoo(address _user, uint256 _amount) public onlyAdmin {
         _updateRewards(_user);
-        compoundMP(_user);
+        mpRewarder.claim(_user);
 
         wooBalance[_user] += _amount;
         wooTotalBalance += _amount;
@@ -127,7 +127,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     function unstakeWoo(address _user, uint256 _amount) external onlyAdmin {
         _updateRewards(_user);
-        compoundMP(_user);
+        mpRewarder.claim(_user);
 
         uint256 wooPrevBalance = wooBalance[_user];
         wooBalance[_user] -= _amount;
@@ -198,15 +198,29 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
     }
 
     function compoundMP(address _user) public onlyAdmin {
-        // NOTE: claim auto updates the reward for the user
+        // NOTE: Simple rewarder user weight is related to mp balance.
+        // NOTE: Need update rewards and debts for simple rewarders.
+
+        unchecked {
+            for (uint256 i = 0; i < rewarders.length(); ++i) {
+                IRewarder(rewarders.at(i)).updateRewardForUser(_user);
+            }
+        }
+
         mpRewarder.claim(_user);
+
+        unchecked {
+            for (uint256 i = 0; i < rewarders.length(); ++i) {
+                IRewarder(rewarders.at(i)).clearRewardToDebt(_user);
+            }
+        }
+
         emit CompoundMPOnStakingManager(_user);
     }
 
     function addMP(address _user, uint256 _amount) public onlyMpRewarder {
         mpBalance[_user] += _amount;
         mpTotalBalance += _amount;
-
         emit AddMPOnStakingManager(_user, _amount);
     }
 

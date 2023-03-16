@@ -86,6 +86,20 @@ async function setupContracts() {
   const wooStakingProxy = await ethers.getContractAt(
     "WooStakingProxy", addressList["WooStakingProxy"]);
 
+  await wooStakingProxy.setTrustedRemoteAddress(
+    constants.lz_fantom_chainid, wooStakingController.address,
+  );
+  await sleep(constants.sleepSeconds);
+  console.log("wooStakingProxy.setTrustedRemoteAddress: %s", wooStakingController.address);
+
+
+  await wooStakingController.setTrustedRemoteAddress(
+    constants.lz_fantom_chainid, wooStakingProxy.address,
+  );
+  await sleep(constants.sleepSeconds);
+  console.log("wooStakingController.setTrustedRemoteAddress: %s", wooStakingProxy.address);
+
+
   await stakingManager.setStakingProxy(wooStakingProxy.address);
   await sleep(constants.sleepSeconds);
   console.log("setStakingProxy: %s", wooStakingProxy.address);
@@ -113,23 +127,47 @@ async function setupContracts() {
   await mpRewarder.setBooster(booster.address);
   await sleep(constants.sleepSeconds);
   console.log("mprewarder setBooster: %s", booster.address);
+}
 
-  await mpRewarder.setAdmin(stakingManager.address, true);
-  await sleep(constants.sleepSeconds);
-  console.log("mprewarder setAdmin: %s", stakingManager.address);
+async function setupRewarders() {
+  const addressList = loadJsonFile();
+  const stakingManager = await ethers.getContractAt(
+    "WooStakingManager", addressList["WooStakingManager"]);
+  const mpRewarder = await ethers.getContractAt(
+    "MpRewarder", addressList["MpRewarder"]);
+  const usdcRewarder = await ethers.getContractAt(
+      "SimpleRewarder", addressList["UsdcRewarder"]);
+  const wethRewarder = await ethers.getContractAt(
+    "SimpleRewarder", addressList["WethRewarder"]);
+  const booster = await ethers.getContractAt(
+    "RewardBooster", addressList["RewardBooster"]);
+  const wooStakingCompounder = await ethers.getContractAt(
+    "WooStakingCompounder", addressList["WooStakingCompounder"]);
+  const wooStakingController = await ethers.getContractAt(
+      "WooStakingController", addressList["WooStakingController"]);
+  const wooStakingProxy = await ethers.getContractAt(
+    "WooStakingProxy", addressList["WooStakingProxy"]);
 
-  await usdcRewarder.setAdmin(stakingManager.address, true);
+  let rewardPerBlock = 1;
+  await usdcRewarder.setRewardPerBlock(rewardPerBlock);
   await sleep(constants.sleepSeconds);
-  console.log("usdc rewarder setAdmin: %s", stakingManager.address);
+  console.log("usdcRewarder setRewardPerBlock: %s", rewardPerBlock);
 
-  await wethRewarder.setAdmin(stakingManager.address, true);
+  rewardPerBlock = 1273148000;
+  await wethRewarder.setRewardPerBlock(rewardPerBlock);
   await sleep(constants.sleepSeconds);
-  console.log("weth rewarder setAdmin: %s", stakingManager.address);
+  console.log("wethRewarder setRewardPerBlock: %s", rewardPerBlock);
+
+  let rewardRate = 87600000;
+  await mpRewarder.setRewardRate(rewardRate);
+  await sleep(constants.sleepSeconds);
+  console.log("mpRewarder setRewardRate: %s", rewardRate);
 
 }
 
 async function main() {
   await setupContracts();
+  await setupRewarders();
   await setUserAdmin(constants.user1);
   await setUserAdmin(constants.user2);
   await setUserAdmin(constants.user3);
