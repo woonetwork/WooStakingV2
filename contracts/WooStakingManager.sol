@@ -95,24 +95,6 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit RemoveRewarderOnStakingManager(_rewarder);
     }
 
-    function _updateRewards(address _user) private {
-        mpRewarder.updateRewardForUser(_user);
-        unchecked {
-            for (uint256 i = 0; i < rewarders.length(); ++i) {
-                IRewarder(rewarders.at(i)).updateRewardForUser(_user);
-            }
-        }
-    }
-
-    function _updateDebts(address _user) private {
-        mpRewarder.clearRewardToDebt(_user);
-        unchecked {
-            for (uint256 i = 0; i < rewarders.length(); ++i) {
-                IRewarder(rewarders.at(i)).clearRewardToDebt(_user);
-            }
-        }
-    }
-
     function stakeWoo(address _user, uint256 _amount) public onlyAdmin {
         _updateRewards(_user);
         compoundMP(_user);
@@ -142,6 +124,24 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         mpTotalBalance -= burnAmount;
 
         emit UnstakeWooOnStakingManager(_user, _amount);
+    }
+
+    function _updateRewards(address _user) private {
+        mpRewarder.updateRewardForUser(_user);
+        unchecked {
+            for (uint256 i = 0; i < rewarders.length(); ++i) {
+                IRewarder(rewarders.at(i)).updateRewardForUser(_user);
+            }
+        }
+    }
+
+    function _updateDebts(address _user) private {
+        mpRewarder.clearRewardToDebt(_user);
+        unchecked {
+            for (uint256 i = 0; i < rewarders.length(); ++i) {
+                IRewarder(rewarders.at(i)).clearRewardToDebt(_user);
+            }
+        }
     }
 
     function totalBalance(address _user) external view returns (uint256) {
