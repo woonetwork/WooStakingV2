@@ -36,19 +36,19 @@ import { deployContract, deployMockContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 const { mine, time, mineUpTo } = require("@nomicfoundation/hardhat-network-helpers");
 
-import { IWooStakingProxy, MpRewarder, RewardBooster, SimpleRewarder, TestWooPP, WooStakingCompounder, WooStakingManager } from "../../typechain";
+import { MpRewarder, RewardBooster, SimpleRewarder, TestWooPP, WooStakingCompounder, WooStakingManager } from "../../typechain";
 import SimpleRewarderArtifact from "../../artifacts/contracts/rewarders/SimpleRewarder.sol/SimpleRewarder.json";
 import MpRewarderArtifact from "../../artifacts/contracts/rewarders/MpRewarder.sol/MpRewarder.json";
 import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManager.sol/WooStakingManager.json";
 import TestTokenArtifact from "../../artifacts/contracts/test/TestToken.sol/TestToken.json";
-import WooStakingProxyArtifact from "../../artifacts/contracts/WooStakingProxy.sol/WooStakingProxy.json";
+import WooStakingLocalArtifact from "../../artifacts/contracts/WooStakingLocal.sol/WooStakingLocal.json";
 import IWooPPV2Artifact from "../../artifacts/contracts/interfaces/IWooPPV2.sol/IWooPPV2.json";
 import RewardBoosterArtifact from "../../artifacts/contracts/rewarders/RewardBooster.sol/RewardBooster.json";
 import TestWooPPArtifact from "../../artifacts/contracts/test/TestWooPP.sol/TestWooPP.json";
 import WooStakingCompounderArtifact from "../../artifacts/contracts/WooStakingCompounder.sol/WooStakingCompounder.json";
 import IWooStakingCompounder from "../../artifacts/contracts/interfaces/IWooStakingCompounder.sol/IWooStakingCompounder.json";
-import { latest } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 
+const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
 describe("WooStakingManager tests", () => {
 
@@ -63,7 +63,7 @@ describe("WooStakingManager tests", () => {
     let stakingCompounder: WooStakingCompounder;
 
     let wooPPv2: Contract;
-    let proxy: Contract;
+    let local: Contract;
     let compounder: Contract;
 
     let user: SignerWithAddress;
@@ -94,14 +94,14 @@ describe("WooStakingManager tests", () => {
         await usdcToken.mint(testWooPP.address, utils.parseEther("100000"));
         await wethToken.mint(testWooPP.address, utils.parseEther("1000"));
 
-        proxy = await deployMockContract(owner, WooStakingProxyArtifact.abi);
-        await proxy.mock.stake.returns();
+        local = await deployMockContract(owner, WooStakingLocalArtifact.abi);
+        await local.mock.stake.returns();
     });
 
     beforeEach(async () => {
         [user, user1, user2] = await ethers.getSigners();
 
-        stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [wooToken.address, wooPPv2.address, proxy.address])) as WooStakingManager;
+        stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [wooToken.address, wooPPv2.address, local.address])) as WooStakingManager;
 
         rewarder1 = (await deployContract(owner, SimpleRewarderArtifact, [usdcToken.address, stakingManager.address])) as SimpleRewarder;
         await usdcToken.mint(rewarder1.address, utils.parseEther("1000000"));
@@ -128,9 +128,28 @@ describe("WooStakingManager tests", () => {
     it("Init Tests", async () => {
         expect(await stakingManager.woo()).to.be.eq(wooToken.address);
         expect(await stakingManager.wooPP()).to.be.eq(wooPPv2.address);
-        expect(await stakingManager.stakingProxy()).to.be.eq(proxy.address);
+        expect(await stakingManager.stakingLocal()).to.be.eq(local.address);
         expect(await stakingManager.owner()).to.be.eq(owner.address);
         expect(await stakingManager.mpRewarder()).to.be.eq(mpRewarder.address);
+    });
+
+    it("Permission Tests", async () => {
+        await stakingManager.setWooPP(ZERO_ADDR); // owner has the permission
+
+         // permission failed
+        await expect(stakingManager.connect(user1).setWooPP(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).setMPRewarder(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).addRewarder(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).removeRewarder(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).stakeWoo(user2.address, 100)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).unstakeWoo(owner.address, 100)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1)["claimRewards(address)"](user1.address)).to.be.revertedWith("BaseAdminOperation: !admin");
+
+        await expect(stakingManager.connect(user1).compoundAll(owner.address)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).compoundMP(owner.address)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).compoundRewards(owner.address)).to.be.revertedWith("BaseAdminOperation: !admin");
+
+        await stakingManager.connect(user1)["claimRewards()"](); // open permission
     });
 
     it("Stake Tests", async () => {
@@ -380,7 +399,6 @@ describe("WooStakingManager tests", () => {
             return "unknown";
         }
     }
-
 
     async function _logPendingReward() {
         console.log("\n-----------------");

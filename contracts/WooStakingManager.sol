@@ -41,7 +41,7 @@ import {IRewarder} from "./interfaces/IRewarder.sol";
 import {IWooStakingCompounder} from "./interfaces/IWooStakingCompounder.sol";
 import {IWooPPV2} from "./interfaces/IWooPPV2.sol";
 import {IWooStakingManager} from "./interfaces/IWooStakingManager.sol";
-import {IWooStakingProxy} from "./interfaces/IWooStakingProxy.sol";
+import {IWooStakingLocal} from "./interfaces/IWooStakingLocal.sol";
 
 import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 import {TransferHelper} from "./util/TransferHelper.sol";
@@ -56,7 +56,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
     EnumerableSet.AddressSet private stakers;
 
     IWooPPV2 public wooPP;
-    IWooStakingProxy public stakingProxy;
+    IWooStakingLocal public stakingLocal;
 
     address public immutable woo;
 
@@ -65,10 +65,10 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     IWooStakingCompounder public compounder;
 
-    constructor(address _woo, address _wooPP, address _stakingProxy) {
+    constructor(address _woo, address _wooPP, address _stakingLocal) {
         woo = _woo;
         wooPP = IWooPPV2(_wooPP);
-        stakingProxy = IWooStakingProxy(_stakingProxy);
+        stakingLocal = IWooStakingLocal(_stakingLocal);
     }
 
     modifier onlyMpRewarder() {
@@ -114,7 +114,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         }
     }
 
-    function stakeWoo(address _user, uint256 _amount) public onlyAdmin {
+    function stakeWoo(address _user, uint256 _amount) external onlyAdmin {
         _updateRewards(_user);
         mpRewarder.claim(_user);
 
@@ -200,7 +200,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         }
     }
 
-    function compoundAll(address _user) external payable onlyAdmin {
+    function compoundAll(address _user) external onlyAdmin {
         compoundMP(_user);
         compoundRewards(_user);
         emit CompoundAllOnStakingManager(_user);
@@ -233,7 +233,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit AddMPOnStakingManager(_user, _amount);
     }
 
-    function compoundRewards(address _user) public payable onlyAdmin {
+    function compoundRewards(address _user) public onlyAdmin {
         uint256 wooAmount = 0;
         address selfAddr = address(this);
         for (uint256 i = 0; i < rewarders.length(); ++i) {
@@ -249,8 +249,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
             }
         }
 
-        TransferHelper.safeApprove(woo, address(stakingProxy), wooAmount);
-        stakingProxy.stake{value: msg.value}(_user, wooAmount);
+        TransferHelper.safeApprove(woo, address(stakingLocal), wooAmount);
+        stakingLocal.stake(_user, wooAmount);
 
         emit CompoundRewardsOnStakingManager(_user);
     }
@@ -288,9 +288,9 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit SetWooPPOnStakingManager(_wooPP);
     }
 
-    function setStakingProxy(address _proxy) external onlyAdmin {
-        stakingProxy = IWooStakingProxy(_proxy);
-        emit SetStakingProxyOnStakingManager(_proxy);
+    function setStakingLocal(address _local) external onlyAdmin {
+        stakingLocal = IWooStakingLocal(_local);
+        emit SetStakingLocalOnStakingManager(_local);
     }
 
     function setCompounder(address _compounder) external onlyAdmin {
