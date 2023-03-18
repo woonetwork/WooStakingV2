@@ -53,6 +53,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
     mapping(address => uint256) public mpBalance;
     uint256 public wooTotalBalance;
     uint256 public mpTotalBalance;
+    EnumerableSet.AddressSet private stakers;
 
     IWooPPV2 public wooPP;
     IWooStakingProxy public stakingProxy;
@@ -122,6 +123,10 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
         _updateDebts(_user);
 
+        if (_amount > 0) {
+            stakers.add(_user);
+        }
+
         emit StakeWooOnStakingManager(_user, _amount);
     }
 
@@ -140,6 +145,10 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         uint256 burnAmount = (mpBalance[_user] * _amount) / wooPrevBalance;
         mpBalance[_user] -= burnAmount;
         mpTotalBalance -= burnAmount;
+
+        if (wooBalance[_user] == 0) {
+            stakers.remove(_user);
+        }
 
         emit UnstakeWooOnStakingManager(_user, _amount);
     }
@@ -230,6 +239,32 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         stakingProxy.stake{value: msg.value}(_user, wooAmount);
 
         emit CompoundRewardsOnStakingManager(_user);
+    }
+
+    function allStakersLength() external view returns (uint256) {
+        return stakers.length();
+    }
+
+    function allStakers() external view returns (address[] memory) {
+        uint256 len = stakers.length();
+        address[] memory _stakers = new address[](len);
+        unchecked {
+            for (uint256 i = 0; i < len; ++i) {
+                _stakers[i] = stakers.at(i);
+            }
+        }
+        return _stakers;
+    }
+
+    // range: [start, end)
+    function allStakers(uint256 start, uint256 end) external view returns (address[] memory) {
+        address[] memory _stakers = new address[](end - start);
+        unchecked {
+            for (uint256 i = start; i < end; ++i) {
+                _stakers[i] = stakers.at(i);
+            }
+        }
+        return _stakers;
     }
 
     // --------------------- Admin Functions --------------------- //
