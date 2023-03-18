@@ -294,6 +294,37 @@ describe("WooStakingManager tests", () => {
         await stakingManager["claimRewards()"]();
     });
 
+    it("CompoundMP Tests", async () => {
+        await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
+        await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
+        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
+        await stakingManager.stakeWoo(user1.address, utils.parseEther("20"));
+        await stakingManager.stakeWoo(user2.address, utils.parseEther("10"));
+
+        await mine(5);
+
+        await _logUserPending();
+
+        const amount1 = await rewarder1.pendingReward(user1.address);
+        const amount2 = await rewarder1.pendingReward(user2.address);
+        await stakingManager.compoundMP(user1.address);
+        console.log("After compoundMP")
+
+        const amount3 = await rewarder1.pendingReward(user1.address);
+        const amount4 = await rewarder1.pendingReward(user2.address);
+        const newReward1 = amount3.sub(amount1);
+        const newReward2 = amount4.sub(amount2);
+        console.log(
+            "New usdc reward user1, user2: ",
+            utils.formatEther(newReward1), utils.formatEther(newReward2));
+        expect(newReward1).to.be.eq(newReward2.mul(2));
+
+        await _logUserPending();
+
+        await mine(5);
+        await _logUserPending();
+    });
+
     async function _logUserWoo() {
         let woo1 = utils.formatEther(await stakingManager.wooBalance(user1.address));
         let woo2 = utils.formatEther(await stakingManager.wooBalance(user2.address));

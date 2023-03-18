@@ -89,7 +89,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
     }
 
     function _stake(address _user, uint256 _amount) private {
-        want.safeTransferFrom(_user, address(this), _amount);
+        want.safeTransferFrom(msg.sender, address(this), _amount);
         balances[_user] += _amount;
 
         emit StakeOnProxy(_user, _amount);
