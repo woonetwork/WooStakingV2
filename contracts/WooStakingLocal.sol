@@ -51,8 +51,8 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
     mapping(address => uint256) public balances;
 
     constructor(address _want, address _stakingManager) {
-        require(_want != address(0), "WooStakingLocal: invalid staking token address");
-        require(_stakingManager != address(0), "WooStakingLocal: invalid staking manager");
+        require(_want != address(0), "WooStakingLocal: !_want");
+        require(_stakingManager != address(0), "WooStakingLocal: !_stakingManager");
 
         want = IERC20(_want);
         stakingManager = IWooStakingManager(_stakingManager);
@@ -83,7 +83,7 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
     }
 
     function _unstake(address _user, uint256 _amount) private {
-        require(balances[_user] >= _amount, "WooStakingProxy: !BALANCE");
+        require(balances[_user] >= _amount, "WooStakingLocal: !BALANCE");
         balances[_user] -= _amount;
         TransferHelper.safeTransfer(address(want), _user, _amount);
         emit UnstakeOnLocal(_user, _amount);

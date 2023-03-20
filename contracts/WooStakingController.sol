@@ -42,7 +42,7 @@ import {TransferHelper} from "./util/TransferHelper.sol";
 
 contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
     event StakeOnController(address indexed user, uint256 amount);
-    event WithdrawOnController(address indexed user, uint256 amount);
+    event UnstakeOnController(address indexed user, uint256 amount);
     event CompoundOnController(address indexed user);
 
     uint8 public constant ACTION_STAKE = 1;
@@ -88,7 +88,7 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
     function _unstake(address _user, uint256 _amount) private {
         balances[_user] -= _amount;
         stakingManager.unstakeWoo(_user, _amount);
-        emit WithdrawOnController(_user, _amount);
+        emit UnstakeOnController(_user, _amount);
     }
 
     function _compound(address _user) private {

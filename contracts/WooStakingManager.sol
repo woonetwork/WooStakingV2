@@ -286,15 +286,15 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit SetWooPPOnStakingManager(_wooPP);
     }
 
-    function setStakingLocal(address _local) external onlyOwner {
+    function setStakingLocal(address _stakingLocal) external onlyOwner {
         // remove the former local from `admin` if needed
         if (address(stakingLocal) != address(0)) {
             setAdmin(address(stakingLocal), false);
         }
 
-        stakingLocal = IWooStakingLocal(_local);
-        setAdmin(_local, true);
-        emit SetStakingLocalOnStakingManager(_local);
+        stakingLocal = IWooStakingLocal(_stakingLocal);
+        setAdmin(_stakingLocal, true);
+        emit SetStakingLocalOnStakingManager(_stakingLocal);
     }
 
     function setCompounder(address _compounder) external onlyAdmin {
