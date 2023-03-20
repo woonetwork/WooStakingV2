@@ -101,7 +101,10 @@ describe("WooStakingManager tests", () => {
     beforeEach(async () => {
         [user, user1, user2] = await ethers.getSigners();
 
-        stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [wooToken.address, wooPPv2.address, local.address])) as WooStakingManager;
+        stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [wooToken.address])) as WooStakingManager;
+
+        await stakingManager.setWooPP(wooPPv2.address);
+        await stakingManager.setStakingLocal(local.address);
 
         rewarder1 = (await deployContract(owner, SimpleRewarderArtifact, [usdcToken.address, stakingManager.address])) as SimpleRewarder;
         await usdcToken.mint(rewarder1.address, utils.parseEther("1000000"));
@@ -136,8 +139,11 @@ describe("WooStakingManager tests", () => {
     it("Permission Tests", async () => {
         await stakingManager.setWooPP(ZERO_ADDR); // owner has the permission
 
-         // permission failed
-        await expect(stakingManager.connect(user1).setWooPP(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");
+         // permission failed: !owner
+        await expect(stakingManager.connect(user1).setWooPP(ZERO_ADDR)).to.be.revertedWith("Ownable: caller is not the owner");
+        await expect(stakingManager.connect(user1).setStakingLocal(ZERO_ADDR)).to.be.revertedWith("Ownable: caller is not the owner");
+
+        // permission failed: !admin
         await expect(stakingManager.connect(user1).setMPRewarder(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");
         await expect(stakingManager.connect(user1).addRewarder(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");
         await expect(stakingManager.connect(user1).removeRewarder(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");

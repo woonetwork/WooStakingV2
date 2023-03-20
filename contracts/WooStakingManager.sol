@@ -65,10 +65,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     IWooStakingCompounder public compounder;
 
-    constructor(address _woo, address _wooPP, address _stakingLocal) {
+    constructor(address _woo) {
         woo = _woo;
-        wooPP = IWooPPV2(_wooPP);
-        stakingLocal = IWooStakingLocal(_stakingLocal);
     }
 
     modifier onlyMpRewarder() {
@@ -283,13 +281,19 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     // --------------------- Admin Functions --------------------- //
 
-    function setWooPP(address _wooPP) external onlyAdmin {
+    function setWooPP(address _wooPP) external onlyOwner {
         wooPP = IWooPPV2(_wooPP);
         emit SetWooPPOnStakingManager(_wooPP);
     }
 
-    function setStakingLocal(address _local) external onlyAdmin {
+    function setStakingLocal(address _local) external onlyOwner {
+        // remove the former local from `admin` if needed
+        if (address(stakingLocal) != address(0)) {
+            setAdmin(address(stakingLocal), false);
+        }
+
         stakingLocal = IWooStakingLocal(_local);
+        setAdmin(_local, true);
         emit SetStakingLocalOnStakingManager(_local);
     }
 

@@ -41,9 +41,9 @@ import MpRewarderArtifact from "../../artifacts/contracts/rewarders/MpRewarder.s
 import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManager.sol/WooStakingManager.json";
 import WooStakingLocalArtifact from "../../artifacts/contracts/WooStakingLocal.sol/WooStakingLocal.json";
 import TestTokenArtifact from "../../artifacts/contracts/test/TestToken.sol/TestToken.json";
-import TestStakingManagerArtifact from "../../artifacts/contracts/test/TestStakingManager.sol/TestStakingManager.json";
 import RewardBoosterArtifact from "../../artifacts/contracts/rewarders/RewardBooster.sol/RewardBooster.json";
 import IWooStakingCompounder from "../../artifacts/contracts/interfaces/IWooStakingCompounder.sol/IWooStakingCompounder.json";
+import IWooPPV2Artifact from "../../artifacts/contracts/interfaces/IWooPPV2.sol/IWooPPV2.json";
 
 
 describe("WooStakingLocal tests", () => {
@@ -62,13 +62,21 @@ describe("WooStakingLocal tests", () => {
 
     let mpToken: Contract;
     let wooToken: Contract;
+    let wooPPv2: Contract;
 
     before(async () => {
         [owner] = await ethers.getSigners();
 
-        stakingManager = (await deployContract(owner, TestStakingManagerArtifact, [])) as WooStakingManager;
+        wooToken = await deployContract(owner, TestTokenArtifact, []);
+        await wooToken.mint(owner.address, utils.parseEther("100000"));
+
+        stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [wooToken.address])) as WooStakingManager;
         mpToken = await deployContract(owner, TestTokenArtifact, []);
         await mpToken.mint(owner.address, utils.parseEther("100000"));
+
+        wooPPv2 = await deployMockContract(owner, IWooPPV2Artifact.abi);
+        await wooPPv2.mock.swap.returns(10000);
+        await stakingManager.setWooPP(wooPPv2.address);
 
         compounder = await deployMockContract(owner, IWooStakingCompounder.abi);
         await compounder.mock.contains.returns(true);
@@ -78,9 +86,6 @@ describe("WooStakingLocal tests", () => {
         booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address])) as RewardBooster;
         await mpRewarder.setBooster(booster.address);
         await stakingManager.setMPRewarder(mpRewarder.address);
-
-        wooToken = await deployContract(owner, TestTokenArtifact, []);
-        await wooToken.mint(owner.address, utils.parseEther("100000"));
     });
 
     beforeEach(async () => {
@@ -94,6 +99,8 @@ describe("WooStakingLocal tests", () => {
             owner,
             WooStakingLocalArtifact,
             [wooToken.address, stakingManager.address])) as WooStakingLocal;
+
+        await stakingManager.setStakingLocal(stakingLocal.address);
     });
 
     it("Staking local tests", async () => {
@@ -138,7 +145,7 @@ describe("WooStakingLocal tests", () => {
         expect(await stakingLocal.balances(user1.address)).to.be.equal(500);
         expect(await stakingManager.wooBalance(user1.address)).to.be.equal(500 + 500);
 
-        await stakingLocal.connect(user1.address).unstakeAll();
+        await stakingLocal.connect(user1).unstakeAll();
         expect(await stakingLocal.balances(owner.address)).to.be.equal(50);
         expect(await stakingManager.wooBalance(owner.address)).to.be.equal(50 + 100);
         expect(await stakingLocal.balances(user1.address)).to.be.equal(0);

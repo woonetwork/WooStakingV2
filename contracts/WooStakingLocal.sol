@@ -56,8 +56,6 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
 
         want = IERC20(_want);
         stakingManager = IWooStakingManager(_stakingManager);
-
-        // NOTE: set stakingLocal as the admin of stakingManager
     }
 
     function stake(uint256 _amount) external whenNotPaused nonReentrant {
@@ -97,6 +95,6 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
 
     function setStakingManager(address _stakingManager) external onlyAdmin {
         stakingManager = IWooStakingManager(_stakingManager);
-        // Don't forget to set stakingLocal as the admin of stakingManager
+        // NOTE: don't forget to set stakingLocal as the admin of stakingManager
     }
 }
