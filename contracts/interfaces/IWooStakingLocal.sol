@@ -7,11 +7,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 interface IWooStakingLocal {
     /* ----- Events ----- */
 
-    event StakeOnProxy(address indexed user, uint256 amount);
-
-    event WithdrawOnProxy(address indexed user, uint256 amount);
-
-    event CompoundOnProxy(address indexed user);
+    event StakeOnLocal(address indexed user, uint256 amount);
+    event UnstakeOnLocal(address indexed user, uint256 amount);
 
     /* ----- State Variables ----- */
 

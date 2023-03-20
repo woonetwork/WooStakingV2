@@ -69,7 +69,7 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
     function _stake(address _user, uint256 _amount) private {
         want.safeTransferFrom(msg.sender, address(this), _amount);
         balances[_user] += _amount;
-        emit StakeOnProxy(_user, _amount);
+        emit StakeOnLocal(_user, _amount);
 
         stakingManager.stakeWoo(_user, _amount);
     }
@@ -86,7 +86,7 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
         require(balances[_user] >= _amount, "WooStakingProxy: !BALANCE");
         balances[_user] -= _amount;
         TransferHelper.safeTransfer(address(want), _user, _amount);
-        emit WithdrawOnProxy(_user, _amount);
+        emit UnstakeOnLocal(_user, _amount);
 
         stakingManager.unstakeWoo(_user, _amount);
     }
