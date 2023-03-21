@@ -9,7 +9,7 @@ interface IWooStakingProxy {
 
     event StakeOnProxy(address indexed user, uint256 amount);
 
-    event WithdrawOnProxy(address indexed user, uint256 amount);
+    event UnstakeOnProxy(address indexed user, uint256 amount);
 
     event CompoundOnProxy(address indexed user);
 

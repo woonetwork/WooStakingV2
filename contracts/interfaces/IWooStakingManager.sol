@@ -13,7 +13,7 @@ interface IWooStakingManager {
     event CompoundAllOnStakingManager(address indexed user);
     event SetMPRewarderOnStakingManager(address indexed rewarder);
     event SetWooPPOnStakingManager(address indexed wooPP);
-    event SetStakingProxyOnStakingManager(address indexed stakingProxy);
+    event SetStakingLocalOnStakingManager(address indexed stakingProxy);
     event AddRewarderOnStakingManager(address indexed rewarder);
     event RemoveRewarderOnStakingManager(address indexed rewarder);
     event ClaimRewardsOnStakingManager(address indexed user);
@@ -40,9 +40,9 @@ interface IWooStakingManager {
 
     function addMP(address _user, uint256 _amount) external;
 
-    function compoundRewards(address _user) external payable;
+    function compoundRewards(address _user) external;
 
-    function compoundAll(address _user) external payable;
+    function compoundAll(address _user) external;
 
     function pendingRewards(
         address _user
