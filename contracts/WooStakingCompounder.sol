@@ -63,14 +63,28 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
     }
 
     function addUser() external {
-        address _user = msg.sender;
+        _addUser(msg.sender);
+    }
+
+    function addUser(address _user) external onlyAdmin {
+        _addUser(_user);
+    }
+
+    function _addUser(address _user) private {
         addTimestamps[_user] = block.timestamp;
         users.add(_user);
         emit AddUser(_user);
     }
 
     function removeUser() external {
-        address _user = msg.sender;
+        _removeUser(msg.sender);
+    }
+
+    function removeUser(address _user) external onlyAdmin {
+        _removeUser(_user);
+    }
+
+    function _removeUser(address _user) private {
         uint256 _ts = addTimestamps[_user];
         if (_ts > 0) {
             if (_ts > block.timestamp) {

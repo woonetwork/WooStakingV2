@@ -47,7 +47,9 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
 
     uint8 public constant ACTION_STAKE = 1;
     uint8 public constant ACTION_UNSTAKE = 2;
-    uint8 public constant ACTION_COMPOUND = 3;
+    uint8 public constant ACTION_SET_AUTO_COMPOUND = 3;
+    uint8 public constant ACTION_COMPOUND_MP = 4;
+    uint8 public constant ACTION_COMPOUND_ALL = 5;
 
     uint16 public controllerChainId;
     address public controller;
@@ -71,7 +73,9 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
 
         actionToDstGas[ACTION_STAKE] = 600000;
         actionToDstGas[ACTION_UNSTAKE] = 600000;
-        actionToDstGas[ACTION_COMPOUND] = 600000;
+        actionToDstGas[ACTION_SET_AUTO_COMPOUND] = 600000;
+        actionToDstGas[ACTION_COMPOUND_MP] = 600000;
+        actionToDstGas[ACTION_COMPOUND_ALL] = 600000;
     }
 
     function estimateFees(uint8 _action, uint256 _amount) public view returns (uint256 messageFee) {
@@ -112,10 +116,21 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         _sendMessage(user, ACTION_UNSTAKE, _amount);
     }
 
-    function compound() external payable whenNotPaused nonReentrant {
+    function setAutoCompound(bool _flag) external payable whenNotPaused nonReentrant {
+        emit SetAutoCompoundOnProxy(msg.sender, _flag);
+        _sendMessage(msg.sender, ACTION_SET_AUTO_COMPOUND, _flag ? 1 : 0);
+    }
+
+    function compoundMP() external payable whenNotPaused nonReentrant {
         address user = msg.sender;
-        emit CompoundOnProxy(user);
-        _sendMessage(user, ACTION_COMPOUND, 0);
+        emit CompoundMPOnProxy(user);
+        _sendMessage(user, ACTION_COMPOUND_MP, 0);
+    }
+
+    function compoundAll() external payable whenNotPaused nonReentrant {
+        address user = msg.sender;
+        emit CompoundAllOnProxy(user);
+        _sendMessage(user, ACTION_COMPOUND_ALL, 0);
     }
 
     // --------------------- LZ Related Functions --------------------- //

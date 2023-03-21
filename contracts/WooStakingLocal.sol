@@ -69,9 +69,8 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
     function _stake(address _user, uint256 _amount) private {
         want.safeTransferFrom(msg.sender, address(this), _amount);
         balances[_user] += _amount;
-        emit StakeOnLocal(_user, _amount);
-
         stakingManager.stakeWoo(_user, _amount);
+        emit StakeOnLocal(_user, _amount);
     }
 
     function unstake(uint256 _amount) external whenNotPaused nonReentrant {
@@ -86,9 +85,26 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
         require(balances[_user] >= _amount, "WooStakingLocal: !BALANCE");
         balances[_user] -= _amount;
         TransferHelper.safeTransfer(address(want), _user, _amount);
-        emit UnstakeOnLocal(_user, _amount);
-
         stakingManager.unstakeWoo(_user, _amount);
+        emit UnstakeOnLocal(_user, _amount);
+    }
+
+    function setAutoCompound(bool _flag) external whenNotPaused nonReentrant {
+        address _user = msg.sender;
+        stakingManager.setAutoCompound(_user, _flag);
+        emit SetAutoCompoundOnLocal(_user, _flag);
+    }
+
+    function compoundMP() external whenNotPaused nonReentrant {
+        address _user = msg.sender;
+        stakingManager.compoundMP(_user);
+        emit CompoundMPOnLocal(_user);
+    }
+
+    function compoundAll() external whenNotPaused nonReentrant {
+        address _user = msg.sender;
+        stakingManager.compoundAll(_user);
+        emit CompoundAllOnLocal(_user);
     }
 
     // --------------------- Admin Functions --------------------- //

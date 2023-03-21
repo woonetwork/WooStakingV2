@@ -198,6 +198,15 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         }
     }
 
+    function setAutoCompound(address _user, bool _flag) external onlyAdmin {
+        if (_flag) {
+            compounder.addUser(_user);
+        } else {
+            compounder.removeUser(_user); // TODO: catch the require error?
+        }
+        emit SetAutoCompoundOnStakingManager(_user, _flag);
+    }
+
     function compoundAll(address _user) external onlyAdmin {
         compoundMP(_user);
         compoundRewards(_user);
@@ -205,9 +214,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
     }
 
     function compoundMP(address _user) public onlyAdmin {
-        // NOTE: Simple rewarder user weight is related to mp balance.
-        // NOTE: Need update rewards and debts for simple rewarders.
-
+        // Caution: since user weight is related to mp balance, force update rewards and debts.
         unchecked {
             for (uint256 i = 0; i < rewarders.length(); ++i) {
                 IRewarder(rewarders.at(i)).updateRewardForUser(_user);
