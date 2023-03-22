@@ -43,17 +43,22 @@ async function deployContracts() {
   // write all contract address to a local file
 
   let contracts = new Map<string, string>();
-  // deprecated contract, but need set this param.
-  // Need setStakingProxy later.
-  const nonContract = "0x0000000000000000000000000000000000000001";
   const depAddressList = constants.depAddressList;
-  let args = [depAddressList["woo"], depAddressList["wooPP"], nonContract];
+  let args = [depAddressList["woo"]];
   let contractName = "WooStakingManager";
   const stakingManager = await deploy(args, contractName);
   console.log(`${contractName} deployed to: ${stakingManager}`);
   contracts.set(contractName, stakingManager);
   await sleep(constants.sleepSeconds);
   await verify(stakingManager, args);
+
+  contractName = "WooStakingLocal";
+  args = [depAddressList["woo"], stakingManager];
+  const stakingLocal = await deploy(args, contractName);
+  console.log(`${contractName} deployed to: ${stakingLocal}`);
+  contracts.set(contractName, stakingLocal);
+  await sleep(constants.sleepSeconds);
+  await verify(stakingLocal, args);
 
   contractName = "WooStakingController";
   args = [constants.depAddressList["lz_fantom_endpoint"], stakingManager];

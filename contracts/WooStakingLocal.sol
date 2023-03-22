@@ -62,7 +62,7 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
         _stake(msg.sender, _amount);
     }
 
-    function stake(address _user, uint256 _amount) external whenNotPaused nonReentrant {
+    function stake(address _user, uint256 _amount) external whenNotPaused onlyAdmin {
         _stake(_user, _amount);
     }
 
