@@ -124,6 +124,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
 
     function setStakingManager(address _manager) external onlyAdmin {
         stakingManager = IWooStakingManager(_manager);
+        setAdmin(_manager, true);
         emit SetStakingManagerOnRewarder(_manager);
     }
 

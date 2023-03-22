@@ -100,6 +100,7 @@ abstract contract BaseRewarder is IRewarder, BaseAdminOperation {
 
     function setStakingManager(address _manager) external onlyOwner {
         stakingManager = IWooStakingManager(_manager);
+        setAdmin(_manager, true);
         emit SetStakingManagerOnRewarder(_manager);
     }
 
