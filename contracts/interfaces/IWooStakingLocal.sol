@@ -9,6 +9,9 @@ interface IWooStakingLocal {
 
     event StakeOnLocal(address indexed user, uint256 amount);
     event UnstakeOnLocal(address indexed user, uint256 amount);
+    event SetAutoCompoundOnLocal(address indexed user, bool flag);
+    event CompoundMPOnLocal(address indexed user);
+    event CompoundAllOnLocal(address indexed user);
 
     /* ----- State Variables ----- */
 
@@ -25,4 +28,10 @@ interface IWooStakingLocal {
     function unstake(uint256 _amount) external;
 
     function unstakeAll() external;
+
+    function setAutoCompound(bool _flag) external;
+
+    function compoundMP() external;
+
+    function compoundAll() external;
 }

@@ -46,12 +46,13 @@ import {IWooStakingCompounder} from "./interfaces/IWooStakingCompounder.sol";
 contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
     event AddUser(address indexed user);
     event RemoveUser(address indexed user);
+    event RemoveAbortedInCooldown(address indexed user);
 
     using EnumerableSet for EnumerableSet.AddressSet;
 
     IWooStakingManager public stakingManager;
 
-    mapping(address => uint256) public addTimestamps;
+    mapping(address => uint256) public lastAddedTs;
 
     uint256 public cooldownDuration;
 
@@ -63,20 +64,33 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
     }
 
     function addUser() external {
-        address _user = msg.sender;
-        addTimestamps[_user] = block.timestamp;
+        _addUser(msg.sender);
+    }
+
+    function addUser(address _user) external onlyAdmin {
+        _addUser(_user);
+    }
+
+    function _addUser(address _user) internal {
+        lastAddedTs[_user] = block.timestamp;
         users.add(_user);
         emit AddUser(_user);
     }
 
     function removeUser() external {
-        address _user = msg.sender;
-        uint256 _ts = addTimestamps[_user];
-        if (_ts > 0) {
-            if (_ts > block.timestamp) {
-                return; // may happen in certain chains; check it here to avoid math overflow
-            }
-            require(block.timestamp - _ts >= cooldownDuration, "WooStakingCompounder: STILL_IN_COOL_DOWN");
+        _removeUser(msg.sender);
+    }
+
+    function removeUser(address _user) external onlyAdmin {
+        _removeUser(_user);
+    }
+
+    function _removeUser(address _user) internal {
+        uint256 _ts = lastAddedTs[_user];
+        if (_ts > 0 && block.timestamp > _ts && block.timestamp - _ts < cooldownDuration) {
+            // Still in cooldown, abort the removing action
+            emit RemoveAbortedInCooldown(_user);
+            return;
         }
         users.remove(_user);
         emit RemoveUser(_user);

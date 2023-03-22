@@ -308,13 +308,13 @@ describe("WooStakingManager tests", () => {
         await stakingManager["claimRewards()"]();
         await mine(5);
         await _logPending(owner.address, "owner");
-        await stakingCompounder.addUser();
+        await stakingCompounder["addUser()"]();
         await expect(stakingManager["claimRewards()"]()).to.be.revertedWith(
             "WooStakingManager: !COMPOUND"
         );
         await mine(10);
         await stakingCompounder.setCooldownDuration(2);
-        await stakingCompounder.removeUser();
+        await stakingCompounder["removeUser()"]();
         await _logPending(owner.address, "owner");
         await stakingManager["claimRewards()"]();
     });

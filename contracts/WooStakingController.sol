@@ -41,13 +41,18 @@ import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 import {TransferHelper} from "./util/TransferHelper.sol";
 
 contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
+    // --------------------- Events --------------------- //
     event StakeOnController(address indexed user, uint256 amount);
     event UnstakeOnController(address indexed user, uint256 amount);
-    event CompoundOnController(address indexed user);
+    event SetAutoCompoundOnController(address indexed user, bool flag);
+    event CompoundMPOnController(address indexed user);
+    event CompoundAllOnController(address indexed user);
 
     uint8 public constant ACTION_STAKE = 1;
     uint8 public constant ACTION_UNSTAKE = 2;
-    uint8 public constant ACTION_COMPOUND = 3;
+    uint8 public constant ACTION_SET_AUTO_COMPOUND = 3;
+    uint8 public constant ACTION_COMPOUND_MP = 4;
+    uint8 public constant ACTION_COMPOUND_ALL = 5;
 
     IWooStakingManager public stakingManager;
 
@@ -70,8 +75,12 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
             _stake(user, amount);
         } else if (action == ACTION_UNSTAKE) {
             _unstake(user, amount);
-        } else if (action == ACTION_COMPOUND) {
-            _compound(user);
+        } else if (action == ACTION_SET_AUTO_COMPOUND) {
+            _setAutoCompound(user, amount > 0);
+        } else if (action == ACTION_COMPOUND_MP) {
+            _compoundMP(user);
+        } else if (action == ACTION_COMPOUND_ALL) {
+            _compoundAll(user);
         } else {
             revert("WooStakingController: !action");
         }
@@ -91,15 +100,26 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
         emit UnstakeOnController(_user, _amount);
     }
 
-    function _compound(address _user) private {
+    function _setAutoCompound(address _user, bool _flag) private {
+        stakingManager.setAutoCompound(_user, _flag);
+        emit SetAutoCompoundOnController(_user, _flag);
+    }
+
+    function _compoundMP(address _user) private {
+        stakingManager.compoundMP(_user);
+        emit CompoundMPOnController(_user);
+    }
+
+    function _compoundAll(address _user) private {
         stakingManager.compoundAll(_user);
-        emit CompoundOnController(_user);
+        emit CompoundAllOnController(_user);
     }
 
     // --------------------- Admin Functions --------------------- //
 
     function setStakingManager(address _manager) external onlyAdmin {
         stakingManager = IWooStakingManager(_manager);
+        // NOTE: don't forget to add self as the admin of stakingManager and autoCompounder
     }
 
     function syncBalance(address _user, uint256 _balance) external onlyAdmin {
