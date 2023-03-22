@@ -63,7 +63,7 @@ abstract contract BaseAdminOperation is Pausable, Ownable {
         emit AdminUpdated(addr, flag);
     }
 
-    function inCaseTokenGotStuck(address stuckToken) external onlyOwner {
+    function inCaseTokenGotStuck(address stuckToken) external virtual onlyOwner {
         if (stuckToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
             TransferHelper.safeTransferETH(_msgSender(), address(this).balance);
         } else {

@@ -124,9 +124,5 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
         emit SetStakingManagerOnController(_manager);
     }
 
-    function syncBalance(address _user, uint256 _balance) external onlyAdmin {
-        // TODO: handle the balance and reward update
-    }
-
     receive() external payable {}
 }
