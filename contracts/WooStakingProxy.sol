@@ -47,7 +47,9 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
 
     uint8 public constant ACTION_STAKE = 1;
     uint8 public constant ACTION_UNSTAKE = 2;
-    uint8 public constant ACTION_COMPOUND = 3;
+    uint8 public constant ACTION_SET_AUTO_COMPOUND = 3;
+    uint8 public constant ACTION_COMPOUND_MP = 4;
+    uint8 public constant ACTION_COMPOUND_ALL = 5;
 
     uint16 public controllerChainId;
     address public controller;
@@ -62,8 +64,8 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         address _controller,
         address _want
     ) NonblockingLzApp(_endpoint) {
-        require(_controller != address(0), "WooStakingProxy: invalid controller address");
-        require(_want != address(0), "WooStakingProxy: invalid staking token address");
+        require(_controller != address(0), "WooStakingProxy: !_controller");
+        require(_want != address(0), "WooStakingProxy: !_want");
 
         controllerChainId = _controllerChainId;
         controller = _controller;
@@ -71,7 +73,9 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
 
         actionToDstGas[ACTION_STAKE] = 600000;
         actionToDstGas[ACTION_UNSTAKE] = 600000;
-        actionToDstGas[ACTION_COMPOUND] = 600000;
+        actionToDstGas[ACTION_SET_AUTO_COMPOUND] = 600000;
+        actionToDstGas[ACTION_COMPOUND_MP] = 600000;
+        actionToDstGas[ACTION_COMPOUND_ALL] = 600000;
     }
 
     function estimateFees(uint8 _action, uint256 _amount) public view returns (uint256 messageFee) {
@@ -89,7 +93,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
     }
 
     function _stake(address _user, uint256 _amount) private {
-        want.safeTransferFrom(_user, address(this), _amount);
+        want.safeTransferFrom(msg.sender, address(this), _amount);
         balances[_user] += _amount;
 
         emit StakeOnProxy(_user, _amount);
@@ -108,20 +112,31 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         require(balances[user] >= _amount, "WooStakingProxy: !BALANCE");
         balances[user] -= _amount;
         want.safeTransfer(user, _amount);
-        emit WithdrawOnProxy(user, _amount);
+        emit UnstakeOnProxy(user, _amount);
         _sendMessage(user, ACTION_UNSTAKE, _amount);
     }
 
-    function compound() external payable whenNotPaused nonReentrant {
+    function setAutoCompound(bool _flag) external payable whenNotPaused nonReentrant {
+        emit SetAutoCompoundOnProxy(msg.sender, _flag);
+        _sendMessage(msg.sender, ACTION_SET_AUTO_COMPOUND, _flag ? 1 : 0);
+    }
+
+    function compoundMP() external payable whenNotPaused nonReentrant {
         address user = msg.sender;
-        emit CompoundOnProxy(user);
-        _sendMessage(user, ACTION_COMPOUND, 0);
+        emit CompoundMPOnProxy(user);
+        _sendMessage(user, ACTION_COMPOUND_MP, 0);
+    }
+
+    function compoundAll() external payable whenNotPaused nonReentrant {
+        address user = msg.sender;
+        emit CompoundAllOnProxy(user);
+        _sendMessage(user, ACTION_COMPOUND_ALL, 0);
     }
 
     // --------------------- LZ Related Functions --------------------- //
 
     function _sendMessage(address user, uint8 _action, uint256 _amount) internal {
-        require(msg.value > 0, "WooStakingProxy: msg.value is 0");
+        require(msg.value > 0, "WooStakingProxy: !msg.value");
 
         bytes memory payload = abi.encode(user, _action, _amount);
         bytes memory adapterParams = abi.encodePacked(uint16(2), actionToDstGas[_action], uint256(0), address(0x0));

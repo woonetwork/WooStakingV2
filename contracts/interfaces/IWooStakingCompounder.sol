@@ -8,4 +8,8 @@ interface IWooStakingCompounder {
     function compound(uint256 start, uint256 end) external;
 
     function contains(address _user) external view returns (bool);
+
+    function addUser(address _user) external;
+
+    function removeUser(address _user) external;
 }

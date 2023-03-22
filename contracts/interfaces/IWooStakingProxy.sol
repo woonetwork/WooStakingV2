@@ -6,12 +6,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IWooStakingProxy {
     /* ----- Events ----- */
-
     event StakeOnProxy(address indexed user, uint256 amount);
-
-    event WithdrawOnProxy(address indexed user, uint256 amount);
-
-    event CompoundOnProxy(address indexed user);
+    event UnstakeOnProxy(address indexed user, uint256 amount);
+    event SetAutoCompoundOnProxy(address indexed user, bool flag);
+    event CompoundMPOnProxy(address indexed user);
+    event CompoundAllOnProxy(address indexed user);
 
     /* ----- State Variables ----- */
 
@@ -35,5 +34,9 @@ interface IWooStakingProxy {
 
     function unstakeAll() external payable;
 
-    function compound() external payable;
+    function setAutoCompound(bool _flag) external payable;
+
+    function compoundMP() external payable;
+
+    function compoundAll() external payable;
 }

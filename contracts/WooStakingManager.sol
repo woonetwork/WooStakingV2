@@ -41,7 +41,7 @@ import {IRewarder} from "./interfaces/IRewarder.sol";
 import {IWooStakingCompounder} from "./interfaces/IWooStakingCompounder.sol";
 import {IWooPPV2} from "./interfaces/IWooPPV2.sol";
 import {IWooStakingManager} from "./interfaces/IWooStakingManager.sol";
-import {IWooStakingProxy} from "./interfaces/IWooStakingProxy.sol";
+import {IWooStakingLocal} from "./interfaces/IWooStakingLocal.sol";
 
 import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 import {TransferHelper} from "./util/TransferHelper.sol";
@@ -53,9 +53,10 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
     mapping(address => uint256) public mpBalance;
     uint256 public wooTotalBalance;
     uint256 public mpTotalBalance;
+    EnumerableSet.AddressSet private stakers;
 
     IWooPPV2 public wooPP;
-    IWooStakingProxy public stakingProxy;
+    IWooStakingLocal public stakingLocal;
 
     address public immutable woo;
 
@@ -64,10 +65,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     IWooStakingCompounder public compounder;
 
-    constructor(address _woo, address _wooPP, address _stakingProxy) {
+    constructor(address _woo) {
         woo = _woo;
-        wooPP = IWooPPV2(_wooPP);
-        stakingProxy = IWooStakingProxy(_stakingProxy);
     }
 
     modifier onlyMpRewarder() {
@@ -95,21 +94,25 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit RemoveRewarderOnStakingManager(_rewarder);
     }
 
-    function stakeWoo(address _user, uint256 _amount) public onlyAdmin {
+    function stakeWoo(address _user, uint256 _amount) external onlyAdmin {
         _updateRewards(_user);
-        compoundMP(_user);
+        mpRewarder.claim(_user);
 
         wooBalance[_user] += _amount;
         wooTotalBalance += _amount;
 
         _updateDebts(_user);
 
+        if (_amount > 0) {
+            stakers.add(_user);
+        }
+
         emit StakeWooOnStakingManager(_user, _amount);
     }
 
     function unstakeWoo(address _user, uint256 _amount) external onlyAdmin {
         _updateRewards(_user);
-        compoundMP(_user);
+        mpRewarder.claim(_user);
 
         uint256 wooPrevBalance = wooBalance[_user];
         wooBalance[_user] -= _amount;
@@ -122,6 +125,10 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         uint256 burnAmount = (mpBalance[_user] * _amount) / wooPrevBalance;
         mpBalance[_user] -= burnAmount;
         mpTotalBalance -= burnAmount;
+
+        if (wooBalance[_user] == 0) {
+            stakers.remove(_user);
+        }
 
         emit UnstakeWooOnStakingManager(_user, _amount);
     }
@@ -191,26 +198,47 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         }
     }
 
-    function compoundAll(address _user) external payable onlyAdmin {
+    function setAutoCompound(address _user, bool _flag) external onlyAdmin {
+        if (_flag) {
+            compounder.addUser(_user);
+        } else {
+            compounder.removeUser(_user); // TODO: catch the require error?
+        }
+        emit SetAutoCompoundOnStakingManager(_user, _flag);
+    }
+
+    function compoundAll(address _user) external onlyAdmin {
         compoundMP(_user);
         compoundRewards(_user);
         emit CompoundAllOnStakingManager(_user);
     }
 
     function compoundMP(address _user) public onlyAdmin {
-        // NOTE: claim auto updates the reward for the user
+        // Caution: since user weight is related to mp balance, force update rewards and debts.
+        unchecked {
+            for (uint256 i = 0; i < rewarders.length(); ++i) {
+                IRewarder(rewarders.at(i)).updateRewardForUser(_user);
+            }
+        }
+
         mpRewarder.claim(_user);
+
+        unchecked {
+            for (uint256 i = 0; i < rewarders.length(); ++i) {
+                IRewarder(rewarders.at(i)).clearRewardToDebt(_user);
+            }
+        }
+
         emit CompoundMPOnStakingManager(_user);
     }
 
     function addMP(address _user, uint256 _amount) public onlyMpRewarder {
         mpBalance[_user] += _amount;
         mpTotalBalance += _amount;
-
         emit AddMPOnStakingManager(_user, _amount);
     }
 
-    function compoundRewards(address _user) public payable onlyAdmin {
+    function compoundRewards(address _user) public onlyAdmin {
         uint256 wooAmount = 0;
         address selfAddr = address(this);
         for (uint256 i = 0; i < rewarders.length(); ++i) {
@@ -226,22 +254,54 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
             }
         }
 
-        TransferHelper.safeApprove(woo, address(stakingProxy), wooAmount);
-        stakingProxy.stake{value: msg.value}(_user, wooAmount);
+        TransferHelper.safeApprove(woo, address(stakingLocal), wooAmount);
+        stakingLocal.stake(_user, wooAmount);
 
         emit CompoundRewardsOnStakingManager(_user);
     }
 
+    function allStakersLength() external view returns (uint256) {
+        return stakers.length();
+    }
+
+    function allStakers() external view returns (address[] memory) {
+        uint256 len = stakers.length();
+        address[] memory _stakers = new address[](len);
+        unchecked {
+            for (uint256 i = 0; i < len; ++i) {
+                _stakers[i] = stakers.at(i);
+            }
+        }
+        return _stakers;
+    }
+
+    // range: [start, end)
+    function allStakers(uint256 start, uint256 end) external view returns (address[] memory) {
+        address[] memory _stakers = new address[](end - start);
+        unchecked {
+            for (uint256 i = start; i < end; ++i) {
+                _stakers[i] = stakers.at(i);
+            }
+        }
+        return _stakers;
+    }
+
     // --------------------- Admin Functions --------------------- //
 
-    function setWooPP(address _wooPP) external onlyAdmin {
+    function setWooPP(address _wooPP) external onlyOwner {
         wooPP = IWooPPV2(_wooPP);
         emit SetWooPPOnStakingManager(_wooPP);
     }
 
-    function setStakingProxy(address _proxy) external onlyAdmin {
-        stakingProxy = IWooStakingProxy(_proxy);
-        emit SetStakingProxyOnStakingManager(_proxy);
+    function setStakingLocal(address _stakingLocal) external onlyOwner {
+        // remove the former local from `admin` if needed
+        if (address(stakingLocal) != address(0)) {
+            setAdmin(address(stakingLocal), false);
+        }
+
+        stakingLocal = IWooStakingLocal(_stakingLocal);
+        setAdmin(_stakingLocal, true);
+        emit SetStakingLocalOnStakingManager(_stakingLocal);
     }
 
     function setCompounder(address _compounder) external onlyAdmin {

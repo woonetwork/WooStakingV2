@@ -36,19 +36,19 @@ import { deployContract, deployMockContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 const { mine, time, mineUpTo } = require("@nomicfoundation/hardhat-network-helpers");
 
-import { IWooStakingProxy, MpRewarder, RewardBooster, SimpleRewarder, TestWooPP, WooStakingCompounder, WooStakingManager } from "../../typechain";
+import { MpRewarder, RewardBooster, SimpleRewarder, TestWooPP, WooStakingCompounder, WooStakingManager } from "../../typechain";
 import SimpleRewarderArtifact from "../../artifacts/contracts/rewarders/SimpleRewarder.sol/SimpleRewarder.json";
 import MpRewarderArtifact from "../../artifacts/contracts/rewarders/MpRewarder.sol/MpRewarder.json";
 import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManager.sol/WooStakingManager.json";
 import TestTokenArtifact from "../../artifacts/contracts/test/TestToken.sol/TestToken.json";
-import WooStakingProxyArtifact from "../../artifacts/contracts/WooStakingProxy.sol/WooStakingProxy.json";
+import WooStakingLocalArtifact from "../../artifacts/contracts/WooStakingLocal.sol/WooStakingLocal.json";
 import IWooPPV2Artifact from "../../artifacts/contracts/interfaces/IWooPPV2.sol/IWooPPV2.json";
 import RewardBoosterArtifact from "../../artifacts/contracts/rewarders/RewardBooster.sol/RewardBooster.json";
 import TestWooPPArtifact from "../../artifacts/contracts/test/TestWooPP.sol/TestWooPP.json";
 import WooStakingCompounderArtifact from "../../artifacts/contracts/WooStakingCompounder.sol/WooStakingCompounder.json";
 import IWooStakingCompounder from "../../artifacts/contracts/interfaces/IWooStakingCompounder.sol/IWooStakingCompounder.json";
-import { latest } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 
+const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
 describe("WooStakingManager tests", () => {
 
@@ -63,7 +63,7 @@ describe("WooStakingManager tests", () => {
     let stakingCompounder: WooStakingCompounder;
 
     let wooPPv2: Contract;
-    let proxy: Contract;
+    let local: Contract;
     let compounder: Contract;
 
     let user: SignerWithAddress;
@@ -94,14 +94,17 @@ describe("WooStakingManager tests", () => {
         await usdcToken.mint(testWooPP.address, utils.parseEther("100000"));
         await wethToken.mint(testWooPP.address, utils.parseEther("1000"));
 
-        proxy = await deployMockContract(owner, WooStakingProxyArtifact.abi);
-        await proxy.mock.stake.returns();
+        local = await deployMockContract(owner, WooStakingLocalArtifact.abi);
+        await local.mock.stake.returns();
     });
 
     beforeEach(async () => {
         [user, user1, user2] = await ethers.getSigners();
 
-        stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [wooToken.address, wooPPv2.address, proxy.address])) as WooStakingManager;
+        stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [wooToken.address])) as WooStakingManager;
+
+        await stakingManager.setWooPP(wooPPv2.address);
+        await stakingManager.setStakingLocal(local.address);
 
         rewarder1 = (await deployContract(owner, SimpleRewarderArtifact, [usdcToken.address, stakingManager.address])) as SimpleRewarder;
         await usdcToken.mint(rewarder1.address, utils.parseEther("1000000"));
@@ -128,9 +131,31 @@ describe("WooStakingManager tests", () => {
     it("Init Tests", async () => {
         expect(await stakingManager.woo()).to.be.eq(wooToken.address);
         expect(await stakingManager.wooPP()).to.be.eq(wooPPv2.address);
-        expect(await stakingManager.stakingProxy()).to.be.eq(proxy.address);
+        expect(await stakingManager.stakingLocal()).to.be.eq(local.address);
         expect(await stakingManager.owner()).to.be.eq(owner.address);
         expect(await stakingManager.mpRewarder()).to.be.eq(mpRewarder.address);
+    });
+
+    it("Permission Tests", async () => {
+        await stakingManager.setWooPP(ZERO_ADDR); // owner has the permission
+
+         // permission failed: !owner
+        await expect(stakingManager.connect(user1).setWooPP(ZERO_ADDR)).to.be.revertedWith("Ownable: caller is not the owner");
+        await expect(stakingManager.connect(user1).setStakingLocal(ZERO_ADDR)).to.be.revertedWith("Ownable: caller is not the owner");
+
+        // permission failed: !admin
+        await expect(stakingManager.connect(user1).setMPRewarder(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).addRewarder(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).removeRewarder(ZERO_ADDR)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).stakeWoo(user2.address, 100)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).unstakeWoo(owner.address, 100)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1)["claimRewards(address)"](user1.address)).to.be.revertedWith("BaseAdminOperation: !admin");
+
+        await expect(stakingManager.connect(user1).compoundAll(owner.address)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).compoundMP(owner.address)).to.be.revertedWith("BaseAdminOperation: !admin");
+        await expect(stakingManager.connect(user1).compoundRewards(owner.address)).to.be.revertedWith("BaseAdminOperation: !admin");
+
+        await stakingManager.connect(user1)["claimRewards()"](); // open permission
     });
 
     it("Stake Tests", async () => {
@@ -283,15 +308,46 @@ describe("WooStakingManager tests", () => {
         await stakingManager["claimRewards()"]();
         await mine(5);
         await _logPending(owner.address, "owner");
-        await stakingCompounder.addUser();
+        await stakingCompounder["addUser()"]();
         await expect(stakingManager["claimRewards()"]()).to.be.revertedWith(
             "WooStakingManager: !COMPOUND"
         );
         await mine(10);
         await stakingCompounder.setCooldownDuration(2);
-        await stakingCompounder.removeUser();
+        await stakingCompounder["removeUser()"]();
         await _logPending(owner.address, "owner");
         await stakingManager["claimRewards()"]();
+    });
+
+    it("CompoundMP Tests", async () => {
+        await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
+        await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
+        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
+        await stakingManager.stakeWoo(user1.address, utils.parseEther("20"));
+        await stakingManager.stakeWoo(user2.address, utils.parseEther("10"));
+
+        await mine(5);
+
+        await _logUserPending();
+
+        const amount1 = await rewarder1.pendingReward(user1.address);
+        const amount2 = await rewarder1.pendingReward(user2.address);
+        await stakingManager.compoundMP(user1.address);
+        console.log("After compoundMP")
+
+        const amount3 = await rewarder1.pendingReward(user1.address);
+        const amount4 = await rewarder1.pendingReward(user2.address);
+        const newReward1 = amount3.sub(amount1);
+        const newReward2 = amount4.sub(amount2);
+        console.log(
+            "New usdc reward user1, user2: ",
+            utils.formatEther(newReward1), utils.formatEther(newReward2));
+        expect(newReward1).to.be.eq(newReward2.mul(2));
+
+        await _logUserPending();
+
+        await mine(5);
+        await _logUserPending();
     });
 
     async function _logUserWoo() {
@@ -349,7 +405,6 @@ describe("WooStakingManager tests", () => {
             return "unknown";
         }
     }
-
 
     async function _logPendingReward() {
         console.log("\n-----------------");

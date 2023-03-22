@@ -34,97 +34,83 @@ pragma solidity ^0.8.4;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import {NonblockingLzApp} from "@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import {IWooStakingLocal} from "./interfaces/IWooStakingLocal.sol";
 import {IWooStakingManager} from "./interfaces/IWooStakingManager.sol";
 import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 import {TransferHelper} from "./util/TransferHelper.sol";
 
-contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
-    // --------------------- Events --------------------- //
-    event StakeOnController(address indexed user, uint256 amount);
-    event UnstakeOnController(address indexed user, uint256 amount);
-    event SetAutoCompoundOnController(address indexed user, bool flag);
-    event CompoundMPOnController(address indexed user);
-    event CompoundAllOnController(address indexed user);
-
-    uint8 public constant ACTION_STAKE = 1;
-    uint8 public constant ACTION_UNSTAKE = 2;
-    uint8 public constant ACTION_SET_AUTO_COMPOUND = 3;
-    uint8 public constant ACTION_COMPOUND_MP = 4;
-    uint8 public constant ACTION_COMPOUND_ALL = 5;
+contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuard {
+    using SafeERC20 for IERC20;
 
     IWooStakingManager public stakingManager;
+    IERC20 public immutable want;
 
     mapping(address => uint256) public balances;
 
-    constructor(address _endpoint, address _stakingManager) NonblockingLzApp(_endpoint) {
+    constructor(address _want, address _stakingManager) {
+        require(_want != address(0), "WooStakingLocal: !_want");
+        require(_stakingManager != address(0), "WooStakingLocal: !_stakingManager");
+
+        want = IERC20(_want);
         stakingManager = IWooStakingManager(_stakingManager);
     }
 
-    // --------------------- LZ Receive Message Functions --------------------- //
-
-    function _nonblockingLzReceive(
-        uint16, // _srcChainId
-        bytes memory, // _srcAddress
-        uint64, // _nonce
-        bytes memory _payload
-    ) internal override whenNotPaused {
-        (address user, uint8 action, uint256 amount) = abi.decode(_payload, (address, uint8, uint256));
-        if (action == ACTION_STAKE) {
-            _stake(user, amount);
-        } else if (action == ACTION_UNSTAKE) {
-            _unstake(user, amount);
-        } else if (action == ACTION_SET_AUTO_COMPOUND) {
-            _setAutoCompound(user, amount > 0);
-        } else if (action == ACTION_COMPOUND_MP) {
-            _compoundMP(user);
-        } else if (action == ACTION_COMPOUND_ALL) {
-            _compoundAll(user);
-        } else {
-            revert("WooStakingController: !action");
-        }
+    function stake(uint256 _amount) external whenNotPaused nonReentrant {
+        _stake(msg.sender, _amount);
     }
 
-    // --------------------- Business Logic Functions --------------------- //
+    function stake(address _user, uint256 _amount) external whenNotPaused nonReentrant {
+        _stake(_user, _amount);
+    }
 
     function _stake(address _user, uint256 _amount) private {
-        stakingManager.stakeWoo(_user, _amount);
+        want.safeTransferFrom(msg.sender, address(this), _amount);
         balances[_user] += _amount;
-        emit StakeOnController(_user, _amount);
+        stakingManager.stakeWoo(_user, _amount);
+        emit StakeOnLocal(_user, _amount);
+    }
+
+    function unstake(uint256 _amount) external whenNotPaused nonReentrant {
+        _unstake(msg.sender, _amount);
+    }
+
+    function unstakeAll() external whenNotPaused nonReentrant {
+        _unstake(msg.sender, balances[msg.sender]);
     }
 
     function _unstake(address _user, uint256 _amount) private {
+        require(balances[_user] >= _amount, "WooStakingLocal: !BALANCE");
         balances[_user] -= _amount;
+        TransferHelper.safeTransfer(address(want), _user, _amount);
         stakingManager.unstakeWoo(_user, _amount);
-        emit UnstakeOnController(_user, _amount);
+        emit UnstakeOnLocal(_user, _amount);
     }
 
-    function _setAutoCompound(address _user, bool _flag) private {
+    function setAutoCompound(bool _flag) external whenNotPaused nonReentrant {
+        address _user = msg.sender;
         stakingManager.setAutoCompound(_user, _flag);
-        emit SetAutoCompoundOnController(_user, _flag);
+        emit SetAutoCompoundOnLocal(_user, _flag);
     }
 
-    function _compoundMP(address _user) private {
+    function compoundMP() external whenNotPaused nonReentrant {
+        address _user = msg.sender;
         stakingManager.compoundMP(_user);
-        emit CompoundMPOnController(_user);
+        emit CompoundMPOnLocal(_user);
     }
 
-    function _compoundAll(address _user) private {
+    function compoundAll() external whenNotPaused nonReentrant {
+        address _user = msg.sender;
         stakingManager.compoundAll(_user);
-        emit CompoundAllOnController(_user);
+        emit CompoundAllOnLocal(_user);
     }
 
     // --------------------- Admin Functions --------------------- //
 
-    function setStakingManager(address _manager) external onlyAdmin {
-        stakingManager = IWooStakingManager(_manager);
-        // NOTE: don't forget to add self as the admin of stakingManager and autoCompounder
+    function setStakingManager(address _stakingManager) external onlyAdmin {
+        stakingManager = IWooStakingManager(_stakingManager);
+        // NOTE: don't forget to set stakingLocal as the admin of stakingManager
     }
-
-    function syncBalance(address _user, uint256 _balance) external onlyAdmin {
-        // TODO: handle the balance and reward update
-    }
-
-    receive() external payable {}
 }
