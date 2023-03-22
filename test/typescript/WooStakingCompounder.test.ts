@@ -68,9 +68,9 @@ describe("WooStakingCompounder tests", () => {
         let totalUsers = await compounder.allUsersLength();
         expect(totalUsers).to.be.eq(3);
 
-        await expect(compounder["removeUser()"]()).to.be.revertedWith(
-            "WooStakingCompounder: STILL_IN_COOL_DOWN"
-        );
+        await expect(compounder["removeUser()"]())
+            .to.emit(compounder, "RemoveAbortedInCooldown")
+            .withArgs(owner.address);
 
         await mine(10);
         await compounder.setCooldownDuration(2);

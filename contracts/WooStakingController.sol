@@ -44,9 +44,9 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
     // --------------------- Events --------------------- //
     event StakeOnController(address indexed user, uint256 amount);
     event UnstakeOnController(address indexed user, uint256 amount);
-    event SetAutoCompoundOnProxy(address indexed user, bool flag);
-    event CompoundMPOnProxy(address indexed user);
-    event CompoundAllOnProxy(address indexed user);
+    event SetAutoCompoundOnController(address indexed user, bool flag);
+    event CompoundMPOnController(address indexed user);
+    event CompoundAllOnController(address indexed user);
 
     uint8 public constant ACTION_STAKE = 1;
     uint8 public constant ACTION_UNSTAKE = 2;
@@ -102,17 +102,17 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
 
     function _setAutoCompound(address _user, bool _flag) private {
         stakingManager.setAutoCompound(_user, _flag);
-        emit SetAutoCompoundOnProxy(_user, _flag);
+        emit SetAutoCompoundOnController(_user, _flag);
     }
 
     function _compoundMP(address _user) private {
         stakingManager.compoundMP(_user);
-        emit CompoundMPOnProxy(_user);
+        emit CompoundMPOnController(_user);
     }
 
     function _compoundAll(address _user) private {
         stakingManager.compoundAll(_user);
-        emit CompoundAllOnProxy(_user);
+        emit CompoundAllOnController(_user);
     }
 
     // --------------------- Admin Functions --------------------- //
