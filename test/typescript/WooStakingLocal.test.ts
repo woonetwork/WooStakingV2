@@ -101,6 +101,7 @@ describe("WooStakingLocal tests", () => {
             [wooToken.address, stakingManager.address])) as WooStakingLocal;
 
         await stakingManager.setStakingLocal(stakingLocal.address);
+        await stakingLocal.setAdmin(stakingManager.address, true);
     });
 
     it("Staking local tests", async () => {
@@ -150,6 +151,19 @@ describe("WooStakingLocal tests", () => {
         expect(await stakingManager.wooBalance(owner.address)).to.be.equal(50 + 100);
         expect(await stakingLocal.balances(user1.address)).to.be.equal(0);
         expect(await stakingManager.wooBalance(user1.address)).to.be.equal(0 + 500);
+    });
+
+    it("CompoundAll local tests", async () => {
+        expect(await stakingLocal.balances(owner.address)).to.be.equal(0);
+        expect(await stakingLocal.balances(user1.address)).to.be.equal(0);
+
+        await wooToken.approve(stakingLocal.address, 1000);
+        await stakingLocal["stake(uint256)"](100);
+        await stakingLocal["stake(address,uint256)"](user1.address, 500);
+
+        await mine(5);
+
+        await stakingLocal.compoundAll();
     });
 
 });
