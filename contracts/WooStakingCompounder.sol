@@ -47,6 +47,8 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
     event AddUser(address indexed user);
     event RemoveUser(address indexed user);
     event RemoveAbortedInCooldown(address indexed user);
+    event SetStakingManagerOnCompounder(address indexed manager);
+    event SetCooldownDuration(uint256 duration);
 
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -155,9 +157,11 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
 
     function setStakingManager(address _stakingManager) external onlyAdmin {
         stakingManager = IWooStakingManager(_stakingManager);
+        emit SetStakingManagerOnCompounder(_stakingManager);
     }
 
     function setCooldownDuration(uint256 _duration) external onlyAdmin {
         cooldownDuration = _duration;
+        emit SetCooldownDuration(_duration);
     }
 }

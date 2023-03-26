@@ -306,5 +306,6 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     function setCompounder(address _compounder) external onlyAdmin {
         compounder = IWooStakingCompounder(_compounder);
+        emit SetCompounderOnStakingManager(_compounder);
     }
 }

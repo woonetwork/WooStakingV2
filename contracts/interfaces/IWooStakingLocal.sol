@@ -12,6 +12,7 @@ interface IWooStakingLocal {
     event SetAutoCompoundOnLocal(address indexed user, bool flag);
     event CompoundMPOnLocal(address indexed user);
     event CompoundAllOnLocal(address indexed user);
+    event SetStakingManagerOnLocal(address indexed manager);
 
     /* ----- State Variables ----- */
 

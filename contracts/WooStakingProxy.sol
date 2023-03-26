@@ -162,14 +162,17 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
 
     function setController(address _controller) external onlyAdmin {
         controller = _controller;
+        emit SetControllerOnProxy(_controller);
     }
 
     function setControllerChainId(uint16 _chainId) external onlyAdmin {
         controllerChainId = _chainId;
+        emit SetControllerChainId(_chainId);
     }
 
     function setGasForAction(uint8 _action, uint256 _gas) public onlyAdmin {
         actionToDstGas[_action] = _gas;
+        emit SetGasForAction(_action, _gas);
     }
 
     receive() external payable {}

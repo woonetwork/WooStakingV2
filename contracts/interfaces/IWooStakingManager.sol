@@ -15,6 +15,7 @@ interface IWooStakingManager {
     event SetMPRewarderOnStakingManager(address indexed rewarder);
     event SetWooPPOnStakingManager(address indexed wooPP);
     event SetStakingLocalOnStakingManager(address indexed stakingProxy);
+    event SetCompounderOnStakingManager(address indexed compounder);
     event AddRewarderOnStakingManager(address indexed rewarder);
     event RemoveRewarderOnStakingManager(address indexed rewarder);
     event ClaimRewardsOnStakingManager(address indexed user);

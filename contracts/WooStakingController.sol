@@ -47,6 +47,7 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
     event SetAutoCompoundOnController(address indexed user, bool flag);
     event CompoundMPOnController(address indexed user);
     event CompoundAllOnController(address indexed user);
+    event SetStakingManagerOnController(address indexed manager);
 
     uint8 public constant ACTION_STAKE = 1;
     uint8 public constant ACTION_UNSTAKE = 2;
@@ -120,6 +121,7 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
     function setStakingManager(address _manager) external onlyAdmin {
         stakingManager = IWooStakingManager(_manager);
         // NOTE: don't forget to add self as the admin of stakingManager and autoCompounder
+        emit SetStakingManagerOnController(_manager);
     }
 
     function syncBalance(address _user, uint256 _balance) external onlyAdmin {
