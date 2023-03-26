@@ -112,5 +112,6 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
     function setStakingManager(address _stakingManager) external onlyAdmin {
         stakingManager = IWooStakingManager(_stakingManager);
         // NOTE: don't forget to set stakingLocal as the admin of stakingManager
+        emit SetStakingManagerOnLocal(_stakingManager);
     }
 }

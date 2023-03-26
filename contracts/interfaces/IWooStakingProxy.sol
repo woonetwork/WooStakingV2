@@ -11,6 +11,9 @@ interface IWooStakingProxy {
     event SetAutoCompoundOnProxy(address indexed user, bool flag);
     event CompoundMPOnProxy(address indexed user);
     event CompoundAllOnProxy(address indexed user);
+    event SetGasForAction(uint8 action, uint256 gas);
+    event SetControllerChainId(uint16 chainId);
+    event SetControllerOnProxy(address indexed controller);
 
     /* ----- State Variables ----- */
 
