@@ -88,6 +88,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         _stake(msg.sender, _amount);
     }
 
+    // Stake msg.sender's amount of `want` token, on behalf of `_user`
     function stake(address _user, uint256 _amount) external payable whenNotPaused nonReentrant {
         _stake(_user, _amount);
     }
@@ -173,6 +174,16 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
     function setGasForAction(uint8 _action, uint256 _gas) public onlyAdmin {
         actionToDstGas[_action] = _gas;
         emit SetGasForAction(_action, _gas);
+    }
+
+    function inCaseTokenGotStuck(address stuckToken) external override onlyOwner {
+        require(stuckToken != address(want), "WooStakingProxy: !want");
+        if (stuckToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            TransferHelper.safeTransferETH(_msgSender(), address(this).balance);
+        } else {
+            uint256 amount = IERC20(stuckToken).balanceOf(address(this));
+            TransferHelper.safeTransfer(stuckToken, _msgSender(), amount);
+        }
     }
 
     receive() external payable {}

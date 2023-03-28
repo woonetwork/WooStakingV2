@@ -114,4 +114,14 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
         // NOTE: don't forget to set stakingLocal as the admin of stakingManager
         emit SetStakingManagerOnLocal(_stakingManager);
     }
+
+    function inCaseTokenGotStuck(address stuckToken) external override onlyOwner {
+        require(stuckToken != address(want), "WooStakingLocal: !want");
+        if (stuckToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            TransferHelper.safeTransferETH(_msgSender(), address(this).balance);
+        } else {
+            uint256 amount = IERC20(stuckToken).balanceOf(address(this));
+            TransferHelper.safeTransfer(stuckToken, _msgSender(), amount);
+        }
+    }
 }

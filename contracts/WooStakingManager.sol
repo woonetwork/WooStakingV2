@@ -202,7 +202,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         if (_flag) {
             compounder.addUser(_user);
         } else {
-            compounder.removeUser(_user); // TODO: catch the require error?
+            compounder.removeUser(_user);
         }
         emit SetAutoCompoundOnStakingManager(_user, _flag);
     }
