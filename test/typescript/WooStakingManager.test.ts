@@ -182,9 +182,10 @@ describe("WooStakingManager tests", () => {
     });
 
     it("Unstake Tests", async () => {
-        await rewarder1.setRewardPerBlock(utils.parseEther("20"));  // usdc 20
-        await rewarder2.setRewardPerBlock(utils.parseEther("1"));   // weth 1
-        await mpRewarder.setRewardRate(31536000 * 100);             // 1% per second
+        // NOTE: params is used to replay repeated unstake errors.
+        await rewarder1.setRewardPerBlock(1);  // usdc
+        await rewarder2.setRewardPerBlock(10);   // weth 10
+        await mpRewarder.setRewardRate(31536000 * 1000);             // 10% per second
 
         expect(await stakingManager.wooTotalBalance()).to.be.eq(0);
         expect(await stakingManager.mpTotalBalance()).to.be.eq(0);
@@ -196,7 +197,10 @@ describe("WooStakingManager tests", () => {
         expect(await stakingManager.wooBalance(user1.address)).to.be.eq(utils.parseEther("40"));
         expect(await stakingManager.wooBalance(user2.address)).to.be.eq(utils.parseEther("20"));
 
-        await stakingManager.unstakeWoo(user1.address, utils.parseEther("10"));
+        // NOTE: repeated unstake operations to replay bug.
+        await stakingManager.unstakeWoo(user1.address, utils.parseEther("5"));
+        await stakingManager.unstakeWoo(user1.address, utils.parseEther("5"));
+
         await stakingManager.unstakeWoo(user2.address, utils.parseEther("20"));
 
         expect(await stakingManager.wooBalance(user1.address)).to.be.eq(utils.parseEther("30"));
@@ -415,5 +419,4 @@ describe("WooStakingManager tests", () => {
         // console.log("user2 pending: ", utils.formatEther(await rewarder.pendingReward(user2.address)));
         console.log("-----------------\n");
     }
-
 });

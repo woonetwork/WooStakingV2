@@ -118,13 +118,13 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         wooBalance[_user] -= _amount;
         wooTotalBalance -= _amount;
 
-        _updateDebts(_user);
-
         // When unstaking, remove the proportional amount of MP tokens,
         // based on amount / wooBalance
         uint256 burnAmount = (mpBalance[_user] * _amount) / wooPrevBalance;
         mpBalance[_user] -= burnAmount;
         mpTotalBalance -= burnAmount;
+
+        _updateDebts(_user);
 
         if (wooBalance[_user] == 0) {
             stakers.remove(_user);
