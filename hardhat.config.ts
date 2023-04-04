@@ -10,6 +10,10 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "dotenv/config";
 
+import "@matterlabs/hardhat-zksync-deploy";
+import "@matterlabs/hardhat-zksync-solc";
+import "@matterlabs/hardhat-zksync-verify";
+
 task("accounts", "Prints the list of accounts", async (_args, hre) => {
   const accounts = await hre.ethers.getSigners();
   accounts.forEach(async (account) => console.info(account.address));
@@ -97,6 +101,12 @@ const config: HardhatUserConfig = {
       chainId: 420,
       accounts: accounts,
     },
+    zksync_testnet: {
+      url: "https://zksync2-testnet.zksync.dev",
+      ethNetwork: "goerli",
+      zksync: true,
+      verifyURL: "https://goerli.explorer.zksync.io/contracts/verify/",
+    }
   },
   etherscan: {
     apiKey: {
@@ -131,6 +141,11 @@ const config: HardhatUserConfig = {
         settings: { optimizer: { enabled: true, runs: 999 } },
       },
     ],
+  },
+  zksolc: {
+    version: "1.3.5",
+    compilerSource: "binary",
+    settings: {},
   },
   paths: {
     sources: "./contracts/",

@@ -7,9 +7,11 @@ typechain
 .DS_Store
 
 # Hardhat files
-cache
-artifacts
+cache/
+artifacts/
 abis/
+artifacts-zk/
+cache-zk/
 
 package-lock.json
 staking_contracts.json
