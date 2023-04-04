@@ -12,6 +12,7 @@ import "dotenv/config";
 
 import "@matterlabs/hardhat-zksync-deploy";
 import "@matterlabs/hardhat-zksync-solc";
+import "@matterlabs/hardhat-zksync-verify";
 
 task("accounts", "Prints the list of accounts", async (_args, hre) => {
   const accounts = await hre.ethers.getSigners();
@@ -100,10 +101,11 @@ const config: HardhatUserConfig = {
       chainId: 420,
       accounts: accounts,
     },
-    zkTestnet: {
-      url: "https://zksync2-testnet.zksync.dev", // URL of the zkSync network RPC
-      ethNetwork: "goerli", // Can also be the RPC URL of the Ethereum network (e.g. `https://goerli.infura.io/v3/<API_KEY>`)
+    zksync_testnet: {
+      url: "https://zksync2-testnet.zksync.dev",
+      ethNetwork: "goerli",
       zksync: true,
+      verifyURL: "https://goerli.explorer.zksync.io/contracts/verify/",
     }
   },
   etherscan: {
