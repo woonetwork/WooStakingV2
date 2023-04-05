@@ -34,21 +34,122 @@ pragma solidity ^0.8.4;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import {BaseRewarder} from "./BaseRewarder.sol";
+import {IRewarder} from "../interfaces/IRewarder.sol";
+import {IWooStakingManager} from "../interfaces/IWooStakingManager.sol";
+import {BaseAdminOperation} from "../BaseAdminOperation.sol";
 import {TransferHelper} from "../util/TransferHelper.sol";
 
-contract SimpleRewarder is BaseRewarder {
-    constructor(address _rewardToken, address _stakingManager) BaseRewarder(_rewardToken, _stakingManager) {}
+contract SimpleRewarder is IRewarder, BaseAdminOperation {
+    event SetRewardPerBlockOnRewarder(uint256 rewardPerBlock);
 
-    function totalWeight() public view override returns (uint256) {
+    address public immutable rewardToken; // reward token
+    uint256 public accTokenPerShare; // accumulated reward token per share
+    uint256 public rewardPerBlock; // emission rate of reward
+    uint256 public lastRewardBlock; // last distribution block
+
+    uint256 totalRewardClaimable = 0;
+
+    IWooStakingManager public stakingManager;
+
+    mapping(address => uint256) public rewardDebt; // reward debt
+    mapping(address => uint256) public rewardClaimable; // shadow harvested reward
+
+    constructor(address _rewardToken, address _stakingManager) {
+        rewardToken = _rewardToken;
+        stakingManager = IWooStakingManager(_stakingManager);
+        lastRewardBlock = block.number;
+        setAdmin(_stakingManager, true);
+    }
+
+    modifier onlyStakingManager() {
+        require(_msgSender() == address(stakingManager), "BaseRewarder: !stakingManager");
+        _;
+    }
+
+    function pendingReward(address _user) external view returns (uint256 rewardAmount) {
+        uint256 _totalWeight = totalWeight();
+
+        uint256 _tokenPerShare = accTokenPerShare;
+        if (block.number > lastRewardBlock && _totalWeight != 0) {
+            uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
+            _tokenPerShare += (rewards * 1e18) / _totalWeight;
+        }
+
+        uint256 newUserReward = (weight(_user) * _tokenPerShare) / 1e18 - rewardDebt[_user];
+        return rewardClaimable[_user] + newUserReward;
+    }
+
+    function allPendingReward() external view returns (uint256 rewardAmount) {
+        return (block.number - lastRewardBlock) * rewardPerBlock;
+    }
+
+    function claim(address _user) external onlyAdmin returns (uint256 rewardAmount) {
+        rewardAmount = _claim(_user, _user);
+        emit ClaimOnRewarder(_user, _user, rewardAmount);
+    }
+
+    function claim(address _user, address _to) external onlyAdmin returns (uint256 rewardAmount) {
+        rewardAmount = _claim(_user, _to);
+        emit ClaimOnRewarder(_user, _to, rewardAmount);
+    }
+
+    function setStakingManager(address _manager) external onlyOwner {
+        stakingManager = IWooStakingManager(_manager);
+        setAdmin(_manager, true);
+        emit SetStakingManagerOnRewarder(_manager);
+    }
+
+    // clear and settle the reward
+    // Update fields: accTokenPerShare, lastRewardBlock
+    function updateReward() public {
+        uint256 _totalWeight = totalWeight();
+        if (_totalWeight == 0 || block.number <= lastRewardBlock) {
+            lastRewardBlock = block.number;
+            return;
+        }
+
+        uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
+        accTokenPerShare += (rewards * 1e18) / _totalWeight;
+        lastRewardBlock = block.number;
+    }
+
+    function updateRewardForUser(address _user) public {
+        uint256 _totalWeight = totalWeight();
+        if (_totalWeight == 0 || block.number <= lastRewardBlock) {
+            lastRewardBlock = block.number;
+            return;
+        }
+
+        uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
+        accTokenPerShare += (rewards * 1e18) / _totalWeight;
+        lastRewardBlock = block.number;
+
+        uint256 accUserReward = (weight(_user) * accTokenPerShare) / 1e18;
+        uint256 newUserReward = accUserReward - rewardDebt[_user];
+        rewardClaimable[_user] += newUserReward;
+        totalRewardClaimable += newUserReward;
+        rewardDebt[_user] = accUserReward;
+    }
+
+    function clearRewardToDebt(address _user) public onlyStakingManager {
+        rewardDebt[_user] = (weight(_user) * accTokenPerShare) / 1e18;
+    }
+
+    function setRewardPerBlock(uint256 _rewardPerBlock) external onlyAdmin {
+        updateReward();
+        rewardPerBlock = _rewardPerBlock;
+        emit SetRewardPerBlockOnRewarder(_rewardPerBlock);
+    }
+
+    function totalWeight() public view returns (uint256) {
         return stakingManager.totalBalance();
     }
 
-    function weight(address _user) public view override returns (uint256) {
+    function weight(address _user) public view returns (uint256) {
         return stakingManager.totalBalance(_user);
     }
 
-    function _claim(address _user, address _to) internal override returns (uint256 rewardAmount) {
+    function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
         updateRewardForUser(_user);
         rewardAmount = rewardClaimable[_user];
         TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
