@@ -103,7 +103,7 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation {
     // Update fields: accTokenPerShare, lastRewardBlock
     function updateReward() public {
         uint256 _totalWeight = totalWeight();
-        if (_totalWeight == 0 || block.number <= lastRewardBlock) {
+        if (_totalWeight == 0) {
             lastRewardBlock = block.number;
             return;
         }
@@ -115,7 +115,7 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation {
 
     function updateRewardForUser(address _user) public {
         uint256 _totalWeight = totalWeight();
-        if (_totalWeight == 0 || block.number <= lastRewardBlock) {
+        if (_totalWeight == 0) {
             lastRewardBlock = block.number;
             return;
         }

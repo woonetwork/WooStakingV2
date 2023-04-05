@@ -138,7 +138,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
     // Update fields: accTokenPerShare, lastRewardTs
     function updateReward() public {
         uint256 _totalWeight = totalWeight();
-        if (_totalWeight == 0 || block.timestamp <= lastRewardTs) {
+        if (_totalWeight == 0) {
             lastRewardTs = block.timestamp;
             return;
         }
@@ -150,7 +150,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
 
     function updateRewardForUser(address _user) public {
         uint256 _totalWeight = totalWeight();
-        if (_totalWeight == 0 || block.timestamp <= lastRewardTs) {
+        if (_totalWeight == 0) {
             lastRewardTs = block.timestamp;
             return;
         }
