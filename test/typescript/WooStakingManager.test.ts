@@ -354,6 +354,43 @@ describe("WooStakingManager tests", () => {
         await _logUserPending();
     });
 
+    it("SyncBalances Tests", async () => {
+        await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
+        await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
+        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
+        await stakingManager.stakeWoo(user1.address, utils.parseEther("20"));
+        await stakingManager.stakeWoo(user2.address, utils.parseEther("10"));
+        await mine(5);
+        await stakingManager.syncBalances(
+            [user1.address, user2.address],
+            [utils.parseEther("25"), utils.parseEther("6")],
+        );
+
+        let woo1 = await stakingManager.wooBalance(user1.address);
+        let woo2 = await stakingManager.wooBalance(user2.address);
+        expect(woo1).to.be.eq(utils.parseEther("25"));
+        expect(woo2).to.be.eq(utils.parseEther("6"));
+        let amount1 = await rewarder1.pendingReward(user1.address);
+        let amount2 = await rewarder1.pendingReward(user2.address);
+        expect(amount1).to.gt(0);
+        expect(amount2).to.gt(0);
+        await mine(5);
+
+        await stakingManager.syncBalances(
+            [user1.address, user2.address],
+            [utils.parseEther("0"), utils.parseEther("6")],
+        );
+        woo1 = await stakingManager.wooBalance(user1.address);
+        woo2 = await stakingManager.wooBalance(user2.address);
+        expect(woo1).to.be.eq(utils.parseEther("0"));
+        expect(woo2).to.be.eq(utils.parseEther("6"));
+        amount1 = await rewarder1.pendingReward(user1.address);
+        amount2 = await rewarder1.pendingReward(user2.address);
+        expect(amount1).to.gt(0);
+        expect(amount2).to.gt(0);
+
+    });
+
     async function _logUserWoo() {
         let woo1 = utils.formatEther(await stakingManager.wooBalance(user1.address));
         let woo2 = utils.formatEther(await stakingManager.wooBalance(user2.address));

@@ -94,7 +94,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit RemoveRewarderOnStakingManager(_rewarder);
     }
 
-    function stakeWoo(address _user, uint256 _amount) external onlyAdmin {
+    function stakeWoo(address _user, uint256 _amount) public onlyAdmin {
         _updateRewards(_user);
         mpRewarder.claim(_user);
 
@@ -110,7 +110,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit StakeWooOnStakingManager(_user, _amount);
     }
 
-    function unstakeWoo(address _user, uint256 _amount) external onlyAdmin {
+    function unstakeWoo(address _user, uint256 _amount) public onlyAdmin {
         _updateRewards(_user);
         mpRewarder.claim(_user);
 
@@ -258,6 +258,26 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         stakingLocal.stake(_user, wooAmount);
 
         emit CompoundRewardsOnStakingManager(_user);
+    }
+
+    function syncBalances(address[] memory _users, uint256[] memory _balances) external onlyAdmin {
+        require(_users.length == _balances.length, "WooStakingManager: INVALID_INPUTS");
+        uint256 len = _users.length;
+        address user;
+        uint256 balance;
+        uint256 prevBalance;
+        unchecked {
+            for (uint256 i = 0; i < len; ++i) {
+                user = _users[i];
+                balance = _balances[i];
+                prevBalance = wooBalance[user];
+                if (balance > prevBalance) {
+                    stakeWoo(user, balance - prevBalance);
+                } else if (balance < prevBalance) {
+                    unstakeWoo(user, prevBalance - balance);
+                }
+            }
+        }
     }
 
     function allStakersLength() external view returns (uint256) {
