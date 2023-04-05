@@ -57,8 +57,6 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
 
     IWooStakingManager public stakingManager;
 
-    mapping(address => uint256) public balances;
-
     constructor(address _endpoint, address _stakingManager) NonblockingLzApp(_endpoint) {
         stakingManager = IWooStakingManager(_stakingManager);
     }
@@ -91,12 +89,10 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
 
     function _stake(address _user, uint256 _amount) private {
         stakingManager.stakeWoo(_user, _amount);
-        balances[_user] += _amount;
         emit StakeOnController(_user, _amount);
     }
 
     function _unstake(address _user, uint256 _amount) private {
-        balances[_user] -= _amount;
         stakingManager.unstakeWoo(_user, _amount);
         emit UnstakeOnController(_user, _amount);
     }
