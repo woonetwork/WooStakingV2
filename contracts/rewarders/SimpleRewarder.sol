@@ -68,11 +68,13 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         _;
     }
 
+    // --------------------- Business Functions --------------------- //
+
     function pendingReward(address _user) external view returns (uint256 rewardAmount) {
         uint256 _totalWeight = totalWeight();
-
         uint256 _tokenPerShare = accTokenPerShare;
-        if (block.number > lastRewardBlock && _totalWeight != 0) {
+
+        if (_totalWeight != 0) {
             uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
             _tokenPerShare += (rewards * 1e18) / _totalWeight;
         }
@@ -95,10 +97,12 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         emit ClaimOnRewarder(_user, _to, rewardAmount);
     }
 
-    function setStakingManager(address _manager) external onlyOwner {
-        stakingManager = IWooStakingManager(_manager);
-        setAdmin(_manager, true);
-        emit SetStakingManagerOnRewarder(_manager);
+    function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
+        updateRewardForUser(_user);
+        rewardAmount = rewardClaimable[_user];
+        TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
+        rewardClaimable[_user] = 0;
+        totalRewardClaimable -= rewardAmount;
     }
 
     // clear and settle the reward
@@ -130,17 +134,13 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         uint256 newUserReward = accUserReward - rewardDebt[_user];
         rewardClaimable[_user] += newUserReward;
         totalRewardClaimable += newUserReward;
+
+        // NOTE: clear all rewards to debt
         rewardDebt[_user] = accUserReward;
     }
 
     function clearRewardToDebt(address _user) public onlyStakingManager {
         rewardDebt[_user] = (weight(_user) * accTokenPerShare) / 1e18;
-    }
-
-    function setRewardPerBlock(uint256 _rewardPerBlock) external onlyAdmin {
-        updateReward();
-        rewardPerBlock = _rewardPerBlock;
-        emit SetRewardPerBlockOnRewarder(_rewardPerBlock);
     }
 
     function totalWeight() public view returns (uint256) {
@@ -151,11 +151,17 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         return stakingManager.totalBalance(_user);
     }
 
-    function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
-        updateRewardForUser(_user);
-        rewardAmount = rewardClaimable[_user];
-        TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
-        totalRewardClaimable -= rewardAmount;
-        rewardClaimable[_user] = 0;
+    // --------------------- Admin Functions --------------------- //
+
+    function setStakingManager(address _manager) external onlyAdmin {
+        stakingManager = IWooStakingManager(_manager);
+        setAdmin(_manager, true);
+        emit SetStakingManagerOnRewarder(_manager);
+    }
+
+    function setRewardPerBlock(uint256 _rewardPerBlock) external onlyAdmin {
+        updateReward();
+        rewardPerBlock = _rewardPerBlock;
+        emit SetRewardPerBlockOnRewarder(_rewardPerBlock);
     }
 }

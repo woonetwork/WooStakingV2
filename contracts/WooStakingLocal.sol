@@ -45,6 +45,7 @@ import {TransferHelper} from "./util/TransferHelper.sol";
 contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    bool public allowEmergencyUnstake;
     IWooStakingManager public stakingManager;
     IERC20 public immutable want;
 
@@ -56,37 +57,48 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
 
         want = IERC20(_want);
         stakingManager = IWooStakingManager(_stakingManager);
+        allowEmergencyUnstake = false;
     }
 
     function stake(uint256 _amount) external whenNotPaused nonReentrant {
         _stake(msg.sender, _amount);
     }
 
+    // CAUTION: nonReentrant cannot be placed here:
+    // https://dashboard.tenderly.co/tx/fantom/0x80cf10fd96e3cce75391c2067e25dd73b0fe27621088d8fa111f24b57d3d1341
     function stake(address _user, uint256 _amount) external whenNotPaused onlyAdmin {
         _stake(_user, _amount);
     }
 
-    function _stake(address _user, uint256 _amount) private {
+    function _stake(address _user, uint256 _amount) internal {
         want.safeTransferFrom(msg.sender, address(this), _amount);
         balances[_user] += _amount;
-        stakingManager.stakeWoo(_user, _amount);
         emit StakeOnLocal(_user, _amount);
+        stakingManager.stakeWoo(_user, _amount);
     }
 
-    function unstake(uint256 _amount) external whenNotPaused nonReentrant {
+    function unstake(uint256 _amount) external nonReentrant {
         _unstake(msg.sender, _amount);
     }
 
-    function unstakeAll() external whenNotPaused nonReentrant {
+    function unstakeAll() external nonReentrant {
         _unstake(msg.sender, balances[msg.sender]);
     }
 
-    function _unstake(address _user, uint256 _amount) private {
+    function emergencyUnstake() external {
+        require(allowEmergencyUnstake, "WooStakingLocal: !allow");
+        uint256 _amount = balances[msg.sender];
+        balances[msg.sender] -= _amount;
+        want.safeTransfer(msg.sender, _amount);
+        emit UnstakeOnLocal(msg.sender, _amount);
+    }
+
+    function _unstake(address _user, uint256 _amount) internal {
         require(balances[_user] >= _amount, "WooStakingLocal: !BALANCE");
         balances[_user] -= _amount;
-        TransferHelper.safeTransfer(address(want), _user, _amount);
-        stakingManager.unstakeWoo(_user, _amount);
+        want.safeTransfer(_user, _amount);
         emit UnstakeOnLocal(_user, _amount);
+        stakingManager.unstakeWoo(_user, _amount);
     }
 
     function setAutoCompound(bool _flag) external whenNotPaused nonReentrant {
@@ -113,6 +125,10 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
         stakingManager = IWooStakingManager(_stakingManager);
         // NOTE: don't forget to set stakingLocal as the admin of stakingManager
         emit SetStakingManagerOnLocal(_stakingManager);
+    }
+
+    function setAllowEmergencyUnstake(bool _allow) external onlyOwner {
+        allowEmergencyUnstake = _allow;
     }
 
     function inCaseTokenGotStuck(address stuckToken) external override onlyOwner {

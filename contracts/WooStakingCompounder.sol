@@ -39,7 +39,6 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 import {TransferHelper} from "./util/TransferHelper.sol";
 
-import {IRewarder} from "./interfaces/IRewarder.sol";
 import {IWooStakingManager} from "./interfaces/IWooStakingManager.sol";
 import {IWooStakingCompounder} from "./interfaces/IWooStakingCompounder.sol";
 
@@ -79,30 +78,35 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         emit AddUser(_user);
     }
 
-    function removeUser() external {
-        _removeUser(msg.sender);
+    function removeUser() external returns (bool succeeded) {
+        succeeded = _removeUser(msg.sender);
     }
 
-    function removeUser(address _user) external onlyAdmin {
-        _removeUser(_user);
+    function removeUser(address _user) external onlyAdmin returns (bool succeeded) {
+        succeeded = _removeUser(_user);
     }
 
-    function _removeUser(address _user) internal {
+    function _removeUser(address _user) internal returns (bool) {
+        if (!users.contains(_user)) {
+            return false;
+        }
         uint256 _ts = lastAddedTs[_user];
         if (_ts > 0 && block.timestamp > _ts && block.timestamp - _ts < cooldownDuration) {
             // Still in cooldown, abort the removing action
             emit RemoveAbortedInCooldown(_user);
-            return;
+            return false;
         }
         users.remove(_user);
+        lastAddedTs[_user] = 0;
         emit RemoveUser(_user);
+        return true;
     }
 
     function addUsers(address[] memory _users) external onlyAdmin {
         unchecked {
             uint256 len = _users.length;
             for (uint256 i = 0; i < len; ++i) {
-                users.add(_users[i]);
+                _addUser(_users[i]);
                 emit AddUser(_users[i]);
             }
         }
@@ -112,7 +116,7 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         unchecked {
             uint256 len = _users.length;
             for (uint256 i = 0; i < len; ++i) {
-                users.remove(_users[i]);
+                _removeUser(_users[i]);
                 emit RemoveUser(_users[i]);
             }
         }

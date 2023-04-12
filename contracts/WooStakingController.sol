@@ -81,33 +81,33 @@ contract WooStakingController is NonblockingLzApp, BaseAdminOperation {
         } else if (action == ACTION_COMPOUND_ALL) {
             _compoundAll(user);
         } else {
-            revert("WooStakingController: !action");
+            // Unsupported actions, ignore it
         }
     }
 
     // --------------------- Business Logic Functions --------------------- //
 
-    function _stake(address _user, uint256 _amount) private {
+    function _stake(address _user, uint256 _amount) internal {
         stakingManager.stakeWoo(_user, _amount);
         emit StakeOnController(_user, _amount);
     }
 
-    function _unstake(address _user, uint256 _amount) private {
+    function _unstake(address _user, uint256 _amount) internal {
         stakingManager.unstakeWoo(_user, _amount);
         emit UnstakeOnController(_user, _amount);
     }
 
-    function _setAutoCompound(address _user, bool _flag) private {
+    function _setAutoCompound(address _user, bool _flag) internal {
         stakingManager.setAutoCompound(_user, _flag);
         emit SetAutoCompoundOnController(_user, _flag);
     }
 
-    function _compoundMP(address _user) private {
+    function _compoundMP(address _user) internal {
         stakingManager.compoundMP(_user);
         emit CompoundMPOnController(_user);
     }
 
-    function _compoundAll(address _user) private {
+    function _compoundAll(address _user) internal {
         stakingManager.compoundAll(_user);
         emit CompoundAllOnController(_user);
     }
