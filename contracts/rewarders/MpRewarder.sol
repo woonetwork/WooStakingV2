@@ -34,13 +34,15 @@ pragma solidity ^0.8.4;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 import {IRewardBooster} from "../interfaces/IRewardBooster.sol";
 import {IRewarder} from "../interfaces/IRewarder.sol";
 import {IWooStakingManager} from "../interfaces/IWooStakingManager.sol";
 import {BaseAdminOperation} from "../BaseAdminOperation.sol";
 import {TransferHelper} from "../util/TransferHelper.sol";
 
-contract MpRewarder is IRewarder, BaseAdminOperation {
+contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     event SetRewardRateOnRewarder(uint256 rate);
     event SetBoosterOnRewarder(address indexed booster);
 
@@ -136,7 +138,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
 
     // clear and settle the reward
     // Update fields: accTokenPerShare, lastRewardTs
-    function updateReward() public {
+    function updateReward() public nonReentrant {
         uint256 _totalWeight = totalWeight();
         if (_totalWeight == 0) {
             lastRewardTs = block.timestamp;
@@ -148,7 +150,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation {
         lastRewardTs = block.timestamp;
     }
 
-    function updateRewardForUser(address _user) public {
+    function updateRewardForUser(address _user) public nonReentrant {
         uint256 _totalWeight = totalWeight();
         if (_totalWeight == 0) {
             lastRewardTs = block.timestamp;
