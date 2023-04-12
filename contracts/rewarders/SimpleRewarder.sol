@@ -89,12 +89,10 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
 
     function claim(address _user) external onlyAdmin returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _user);
-        emit ClaimOnRewarder(_user, _user, rewardAmount);
     }
 
     function claim(address _user, address _to) external onlyAdmin returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _to);
-        emit ClaimOnRewarder(_user, _to, rewardAmount);
     }
 
     function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
@@ -103,6 +101,7 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
         rewardClaimable[_user] = 0;
         totalRewardClaimable -= rewardAmount;
+        emit ClaimOnRewarder(_user, _to, rewardAmount);
     }
 
     // clear and settle the reward

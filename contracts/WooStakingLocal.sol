@@ -45,7 +45,7 @@ import {TransferHelper} from "./util/TransferHelper.sol";
 contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    bool public allowEmergencyUnstake;
+    bool public isEmergency;
     IWooStakingManager public stakingManager;
     IERC20 public immutable want;
 
@@ -57,7 +57,7 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
 
         want = IERC20(_want);
         stakingManager = IWooStakingManager(_stakingManager);
-        allowEmergencyUnstake = false;
+        isEmergency = false;
     }
 
     function stake(uint256 _amount) external whenNotPaused nonReentrant {
@@ -86,7 +86,7 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
     }
 
     function emergencyUnstake() external {
-        require(allowEmergencyUnstake, "WooStakingLocal: !allow");
+        require(isEmergency, "WooStakingLocal: !allow");
         uint256 _amount = balances[msg.sender];
         balances[msg.sender] -= _amount;
         want.safeTransfer(msg.sender, _amount);
@@ -127,8 +127,8 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
         emit SetStakingManagerOnLocal(_stakingManager);
     }
 
-    function setAllowEmergencyUnstake(bool _allow) external onlyOwner {
-        allowEmergencyUnstake = _allow;
+    function setIsEmergency(bool _isEmergency) external onlyOwner {
+        isEmergency = _isEmergency;
     }
 
     function inCaseTokenGotStuck(address stuckToken) external override onlyOwner {

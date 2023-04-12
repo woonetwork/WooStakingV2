@@ -51,7 +51,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
     uint8 public constant ACTION_COMPOUND_MP = 4;
     uint8 public constant ACTION_COMPOUND_ALL = 5;
 
-    bool public allowEmergencyUnstake;
+    bool public isEmergency;
     uint16 public controllerChainId;
     address public controller;
     IERC20 public immutable want;
@@ -71,7 +71,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         controllerChainId = _controllerChainId;
         controller = _controller;
         want = IERC20(_want);
-        allowEmergencyUnstake = false;
+        isEmergency = false;
 
         // TODO: adjust the gas
         actionToDstGas[ACTION_STAKE] = 600000;
@@ -112,7 +112,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
     }
 
     function emergencyUnstake() external {
-        require(allowEmergencyUnstake, "WooStakingProxy: !allow");
+        require(isEmergency, "WooStakingProxy: !allow");
         uint256 _amount = balances[msg.sender];
         balances[msg.sender] -= _amount;
         want.safeTransfer(msg.sender, _amount);
@@ -187,8 +187,8 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         emit SetGasForAction(_action, _gas);
     }
 
-    function setAllowEmergencyUnstake(bool _allow) external onlyOwner {
-        allowEmergencyUnstake = _allow;
+    function setIsEmergency(bool _isEmergency) external onlyOwner {
+        isEmergency = _isEmergency;
     }
 
     function inCaseTokenGotStuck(address stuckToken) external override onlyOwner {

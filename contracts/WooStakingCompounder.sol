@@ -107,7 +107,6 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
             uint256 len = _users.length;
             for (uint256 i = 0; i < len; ++i) {
                 _addUser(_users[i]);
-                emit AddUser(_users[i]);
             }
         }
     }
@@ -117,7 +116,6 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
             uint256 len = _users.length;
             for (uint256 i = 0; i < len; ++i) {
                 _removeUser(_users[i]);
-                emit RemoveUser(_users[i]);
             }
         }
     }
