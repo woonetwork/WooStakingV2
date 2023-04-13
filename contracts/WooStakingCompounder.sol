@@ -78,15 +78,15 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         emit AddUser(_user);
     }
 
-    function removeUser() external returns (bool succeeded) {
-        succeeded = _removeUser(msg.sender);
+    function removeUser() external returns (bool removed) {
+        removed = _removeUser(msg.sender);
     }
 
-    function removeUser(address _user) external onlyAdmin returns (bool succeeded) {
-        succeeded = _removeUser(_user);
+    function removeUser(address _user) external onlyAdmin returns (bool removed) {
+        removed = _removeUser(_user);
     }
 
-    function _removeUser(address _user) internal returns (bool) {
+    function _removeUser(address _user) internal returns (bool removed) {
         if (!users.contains(_user)) {
             return false;
         }
