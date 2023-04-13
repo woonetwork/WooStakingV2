@@ -51,6 +51,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
     uint8 public constant ACTION_COMPOUND_MP = 4;
     uint8 public constant ACTION_COMPOUND_ALL = 5;
 
+    bool public isEmergency;
     uint16 public controllerChainId;
     address public controller;
     IERC20 public immutable want;
@@ -70,7 +71,9 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         controllerChainId = _controllerChainId;
         controller = _controller;
         want = IERC20(_want);
+        isEmergency = false;
 
+        // TODO: adjust the gas
         actionToDstGas[ACTION_STAKE] = 600000;
         actionToDstGas[ACTION_UNSTAKE] = 600000;
         actionToDstGas[ACTION_SET_AUTO_COMPOUND] = 600000;
@@ -93,45 +96,53 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         _stake(_user, _amount);
     }
 
-    function _stake(address _user, uint256 _amount) private {
+    function _stake(address _user, uint256 _amount) internal {
         want.safeTransferFrom(msg.sender, address(this), _amount);
         balances[_user] += _amount;
-
         emit StakeOnProxy(_user, _amount);
         _sendMessage(_user, ACTION_STAKE, _amount);
     }
 
-    function unstake(uint256 _amount) external payable whenNotPaused nonReentrant {
+    function unstake(uint256 _amount) external payable nonReentrant {
         _unstake(msg.sender, _amount);
     }
 
-    function unstakeAll() external payable whenNotPaused nonReentrant {
+    function unstakeAll() external payable nonReentrant {
         _unstake(msg.sender, balances[msg.sender]);
     }
 
-    function _unstake(address user, uint256 _amount) private {
-        require(balances[user] >= _amount, "WooStakingProxy: !BALANCE");
-        balances[user] -= _amount;
-        want.safeTransfer(user, _amount);
-        emit UnstakeOnProxy(user, _amount);
-        _sendMessage(user, ACTION_UNSTAKE, _amount);
+    function emergencyUnstake() external {
+        require(isEmergency, "WooStakingProxy: !allow");
+        uint256 _amount = balances[msg.sender];
+        balances[msg.sender] -= _amount;
+        want.safeTransfer(msg.sender, _amount);
+        emit UnstakeOnProxy(msg.sender, _amount);
+    }
+
+    function _unstake(address _user, uint256 _amount) internal {
+        require(balances[_user] >= _amount, "WooStakingProxy: !BALANCE");
+        balances[_user] -= _amount;
+        want.safeTransfer(_user, _amount);
+        emit UnstakeOnProxy(_user, _amount);
+        _sendMessage(_user, ACTION_UNSTAKE, _amount);
     }
 
     function setAutoCompound(bool _flag) external payable whenNotPaused nonReentrant {
-        emit SetAutoCompoundOnProxy(msg.sender, _flag);
-        _sendMessage(msg.sender, ACTION_SET_AUTO_COMPOUND, _flag ? 1 : 0);
+        address _user = msg.sender;
+        emit SetAutoCompoundOnProxy(_user, _flag);
+        _sendMessage(_user, ACTION_SET_AUTO_COMPOUND, _flag ? 1 : 0);
     }
 
     function compoundMP() external payable whenNotPaused nonReentrant {
-        address user = msg.sender;
-        emit CompoundMPOnProxy(user);
-        _sendMessage(user, ACTION_COMPOUND_MP, 0);
+        address _user = msg.sender;
+        emit CompoundMPOnProxy(_user);
+        _sendMessage(_user, ACTION_COMPOUND_MP, 0);
     }
 
     function compoundAll() external payable whenNotPaused nonReentrant {
-        address user = msg.sender;
-        emit CompoundAllOnProxy(user);
-        _sendMessage(user, ACTION_COMPOUND_ALL, 0);
+        address _user = msg.sender;
+        emit CompoundAllOnProxy(_user);
+        _sendMessage(_user, ACTION_COMPOUND_ALL, 0);
     }
 
     // --------------------- LZ Related Functions --------------------- //
@@ -171,9 +182,13 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         emit SetControllerChainId(_chainId);
     }
 
-    function setGasForAction(uint8 _action, uint256 _gas) public onlyAdmin {
+    function setGasForAction(uint8 _action, uint256 _gas) external onlyAdmin {
         actionToDstGas[_action] = _gas;
         emit SetGasForAction(_action, _gas);
+    }
+
+    function setIsEmergency(bool _isEmergency) external onlyOwner {
+        isEmergency = _isEmergency;
     }
 
     function inCaseTokenGotStuck(address stuckToken) external override onlyOwner {

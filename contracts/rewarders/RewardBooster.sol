@@ -69,7 +69,7 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
         unchecked {
             for (uint256 i = 0; i < users.length; ++i) {
                 address _user = users[i];
-                mpRewarder.updateRewardForUser(_user);
+                mpRewarder.updateRewardForUser(_user); // settle the reward for prevous boost ratios
                 boostRatio[_user] =
                     ((volFlags[i] ? volumeBR : base) *
                         (tvlFlags[i] ? tvlBR : base) *

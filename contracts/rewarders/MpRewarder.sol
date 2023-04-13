@@ -72,34 +72,13 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         _;
     }
 
-    function totalWeight() public view returns (uint256) {
-        return stakingManager.wooTotalBalance();
-    }
-
-    function weight(address _user) public view returns (uint256) {
-        uint256 ratio = booster.boostRatio(_user);
-        uint256 wooBal = stakingManager.wooBalance(_user);
-        return ratio == 0 ? wooBal : (wooBal * ratio) / booster.base();
-    }
-
-    function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
-        updateRewardForUser(_user);
-        rewardAmount = rewardClaimable[_user];
-        stakingManager.addMP(_to, rewardAmount);
-        rewardClaimable[_user] = 0;
-        totalRewardClaimable -= rewardAmount;
-    }
-
-    function setBooster(address _booster) external onlyOwner {
-        booster = IRewardBooster(_booster);
-        emit SetBoosterOnRewarder(_booster);
-    }
+    // --------------------- Business Functions --------------------- //
 
     function pendingReward(address _user) external view returns (uint256 rewardAmount) {
         uint256 _totalWeight = totalWeight();
-
         uint256 _tokenPerShare = accTokenPerShare;
-        if (block.timestamp > lastRewardTs && _totalWeight != 0) {
+
+        if (_totalWeight != 0) {
             // 1 year = 31,536,000 seconds
             uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / 10000 / 31536000;
             _tokenPerShare += (rewards * 1e18) / _totalWeight;
@@ -116,24 +95,19 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
 
     function claim(address _user) external onlyAdmin returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _user);
-        emit ClaimOnRewarder(_user, _user, rewardAmount);
     }
 
     function claim(address _user, address _to) external onlyAdmin returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _to);
+    }
+
+    function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
+        updateRewardForUser(_user);
+        rewardAmount = rewardClaimable[_user];
+        stakingManager.addMP(_to, rewardAmount);
+        rewardClaimable[_user] = 0;
+        totalRewardClaimable -= rewardAmount;
         emit ClaimOnRewarder(_user, _to, rewardAmount);
-    }
-
-    function setStakingManager(address _manager) external onlyAdmin {
-        stakingManager = IWooStakingManager(_manager);
-        setAdmin(_manager, true);
-        emit SetStakingManagerOnRewarder(_manager);
-    }
-
-    function setRewardRate(uint256 _rate) external onlyAdmin {
-        updateReward();
-        rewardRate = _rate;
-        emit SetRewardRateOnRewarder(_rate);
     }
 
     // clear and settle the reward
@@ -165,6 +139,8 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         uint256 newUserReward = accUserReward - rewardDebt[_user];
         rewardClaimable[_user] += newUserReward;
         totalRewardClaimable += newUserReward;
+
+        // NOTE: clear all rewards to debt
         rewardDebt[_user] = accUserReward;
     }
 
@@ -174,5 +150,36 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
 
     function boostedRewardRate(address _user) external view returns (uint256) {
         return (rewardRate * booster.boostRatio(_user)) / booster.base();
+    }
+
+    function totalWeight() public view returns (uint256) {
+        // CAUTION: total balance not counting boost ratio
+        return stakingManager.wooTotalBalance();
+    }
+
+    function weight(address _user) public view returns (uint256) {
+        uint256 ratio = booster.boostRatio(_user);
+        uint256 wooBal = stakingManager.wooBalance(_user);
+        return ratio == 0 ? wooBal : (wooBal * ratio) / booster.base();
+    }
+
+    // --------------------- Admin Functions --------------------- //
+
+    function setStakingManager(address _manager) external onlyAdmin {
+        stakingManager = IWooStakingManager(_manager);
+        setAdmin(_manager, true);
+        emit SetStakingManagerOnRewarder(_manager);
+    }
+
+    function setRewardRate(uint256 _rate) external onlyAdmin {
+        updateReward();
+        rewardRate = _rate;
+        emit SetRewardRateOnRewarder(_rate);
+    }
+
+    function setBooster(address _booster) external onlyAdmin {
+        updateReward();
+        booster = IRewardBooster(_booster);
+        emit SetBoosterOnRewarder(_booster);
     }
 }
