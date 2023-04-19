@@ -116,7 +116,7 @@ describe("WooStakingManager tests", () => {
         await stakingManager.addRewarder(rewarder2.address);
         await rewarder2.setAdmin(stakingManager.address, true);
 
-        mpRewarder = (await deployContract(owner, MpRewarderArtifact, [wooToken.address, stakingManager.address])) as MpRewarder;
+        mpRewarder = (await deployContract(owner, MpRewarderArtifact, [stakingManager.address])) as MpRewarder;
         await mpRewarder.setAdmin(stakingManager.address, true);
 
         booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address])) as RewardBooster;

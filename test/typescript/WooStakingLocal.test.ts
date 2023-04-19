@@ -60,7 +60,6 @@ describe("WooStakingLocal tests", () => {
     let user1: SignerWithAddress;
     let user2: SignerWithAddress;
 
-    let mpToken: Contract;
     let wooToken: Contract;
     let wooPPv2: Contract;
 
@@ -71,8 +70,6 @@ describe("WooStakingLocal tests", () => {
         await wooToken.mint(owner.address, utils.parseEther("100000"));
 
         stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [wooToken.address])) as WooStakingManager;
-        mpToken = await deployContract(owner, TestTokenArtifact, []);
-        await mpToken.mint(owner.address, utils.parseEther("100000"));
 
         wooPPv2 = await deployMockContract(owner, IWooPPV2Artifact.abi);
         await wooPPv2.mock.swap.returns(10000);
@@ -81,8 +78,7 @@ describe("WooStakingLocal tests", () => {
         compounder = await deployMockContract(owner, IWooStakingCompounder.abi);
         await compounder.mock.contains.returns(true);
 
-        mpRewarder = (await deployContract(owner, MpRewarderArtifact, [mpToken.address, stakingManager.address])) as MpRewarder;
-        await mpToken.mint(mpRewarder.address, utils.parseEther("100000"));
+        mpRewarder = (await deployContract(owner, MpRewarderArtifact, [stakingManager.address])) as MpRewarder;
         booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address])) as RewardBooster;
         await mpRewarder.setBooster(booster.address);
         await stakingManager.setMPRewarder(mpRewarder.address);

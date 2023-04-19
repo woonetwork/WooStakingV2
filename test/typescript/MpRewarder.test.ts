@@ -58,20 +58,15 @@ describe("MpRewarder tests", () => {
     let user1: SignerWithAddress;
     let user2: SignerWithAddress;
 
-    let mpToken: Contract;
-
     before(async () => {
         [owner] = await ethers.getSigners();
 
         stakingManager = (await deployContract(owner, TestStakingManagerArtifact, [])) as WooStakingManager;
-        mpToken = await deployContract(owner, TestTokenArtifact, []);
-        await mpToken.mint(owner.address, utils.parseEther("100000"));
 
         compounder = await deployMockContract(owner, IWooStakingCompounder.abi);
         await compounder.mock.contains.returns(true);
 
-        mpRewarder = (await deployContract(owner, MpRewarderArtifact, [mpToken.address, stakingManager.address])) as MpRewarder;
-        await mpToken.mint(mpRewarder.address, utils.parseEther("100000"));
+        mpRewarder = (await deployContract(owner, MpRewarderArtifact, [stakingManager.address])) as MpRewarder;
         booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address])) as RewardBooster;
         await mpRewarder.setBooster(booster.address);
         await stakingManager.setMPRewarder(mpRewarder.address);
@@ -111,7 +106,7 @@ describe("MpRewarder tests", () => {
         // await _logPendingReward();
 
         // Verify the claim of pending reward
-        await mpRewarder["claim(address,address)"](user1.address, user1.address);
+        await mpRewarder["claim(address)"](user1.address);
         // await _logUserBals();
         expect(await stakingManager.mpBalance(user1.address)).to.be.gte(user1Pending);
         expect(await stakingManager.mpBalance(user.address)).to.be.equal(0);

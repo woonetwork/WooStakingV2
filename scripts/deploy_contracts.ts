@@ -82,7 +82,7 @@ async function deployContracts() {
   await verify(stakingProxy, args);
 
   contractName = "MpRewarder";
-  args = [constants.depAddressList["woo"], stakingManager];
+  args = [stakingManager];
   const mpRewarder = await deploy(args, contractName);
   console.log(`${contractName} deployed to: ${mpRewarder}`);
   contracts.set(contractName, mpRewarder);
