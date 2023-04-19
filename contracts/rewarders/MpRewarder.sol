@@ -46,8 +46,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     event SetRewardRateOnRewarder(uint256 rate);
     event SetBoosterOnRewarder(address indexed booster);
 
-    address public immutable rewardToken; // reward token
-    uint256 public accTokenPerShare;
+    uint256 public accTokenPerShare; // accumulated reward token per share. number unit is 1e18.
     uint256 public rewardRate; // emission rate of reward. e.g. 10000th, 100: 1%, 5000: 50%
     uint256 public lastRewardTs; // last distribution block
 
@@ -60,8 +59,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     mapping(address => uint256) public rewardDebt; // reward debt
     mapping(address => uint256) public rewardClaimable; // shadow harvested reward
 
-    constructor(address _rewardToken, address _stakingManager) {
-        rewardToken = _rewardToken;
+    constructor(address _stakingManager) {
         stakingManager = IWooStakingManager(_stakingManager);
         lastRewardTs = block.timestamp;
         setAdmin(_stakingManager, true);
@@ -72,6 +70,10 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         _;
     }
 
+    function rewardToken() external pure returns (address) {
+        return address(0x0);
+    }
+
     // --------------------- Business Functions --------------------- //
 
     function pendingReward(address _user) external view returns (uint256 rewardAmount) {
@@ -79,8 +81,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         uint256 _tokenPerShare = accTokenPerShare;
 
         if (_totalWeight != 0) {
-            // 1 year = 31,536,000 seconds
-            uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / 10000 / 31536000;
+            uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / (10000 * 365 days);
             _tokenPerShare += (rewards * 1e18) / _totalWeight;
         }
 
@@ -89,24 +90,24 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     }
 
     function allPendingReward() external view returns (uint256 rewardAmount) {
-        // 1 year = 31,536,000 seconds
-        return ((block.timestamp - lastRewardTs) * totalWeight() * rewardRate) / 10000 / 31536000;
+        return ((block.timestamp - lastRewardTs) * totalWeight() * rewardRate) / (10000 * 365 days);
     }
 
     function claim(address _user) external onlyAdmin returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _user);
     }
 
-    function claim(address _user, address _to) external onlyAdmin returns (uint256 rewardAmount) {
+    // NOTE: claiming to other address only works for compouding rewards
+    function claim(address _user, address _to) external onlyStakingManager returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _to);
     }
 
     function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
         updateRewardForUser(_user);
         rewardAmount = rewardClaimable[_user];
-        stakingManager.addMP(_to, rewardAmount);
         rewardClaimable[_user] = 0;
         totalRewardClaimable -= rewardAmount;
+        stakingManager.addMP(_to, rewardAmount);
         emit ClaimOnRewarder(_user, _to, rewardAmount);
     }
 
@@ -119,7 +120,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
             return;
         }
 
-        uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / 10000 / 31536000;
+        uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / (10000 * 365 days);
         accTokenPerShare += (rewards * 1e18) / _totalWeight;
         lastRewardTs = block.timestamp;
     }
@@ -131,7 +132,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
             return;
         }
 
-        uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / 10000 / 31536000;
+        uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / (10000 * 365 days);
         accTokenPerShare += (rewards * 1e18) / _totalWeight;
         lastRewardTs = block.timestamp;
 
@@ -166,6 +167,9 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     // --------------------- Admin Functions --------------------- //
 
     function setStakingManager(address _manager) external onlyAdmin {
+        if (address(stakingManager) != address(0)) {
+            setAdmin(address(stakingManager), false);
+        }
         stakingManager = IWooStakingManager(_manager);
         setAdmin(_manager, true);
         emit SetStakingManagerOnRewarder(_manager);

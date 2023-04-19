@@ -45,7 +45,7 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     event SetRewardPerBlockOnRewarder(uint256 rewardPerBlock);
 
     address public immutable rewardToken; // reward token
-    uint256 public accTokenPerShare; // accumulated reward token per share
+    uint256 public accTokenPerShare; // accumulated reward token per share. number unit is 1e18.
     uint256 public rewardPerBlock; // emission rate of reward
     uint256 public lastRewardBlock; // last distribution block
 
@@ -91,16 +91,17 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         rewardAmount = _claim(_user, _user);
     }
 
-    function claim(address _user, address _to) external onlyAdmin returns (uint256 rewardAmount) {
+    // NOTE: claiming to other address only works for compouding rewards
+    function claim(address _user, address _to) external onlyStakingManager returns (uint256 rewardAmount) {
         rewardAmount = _claim(_user, _to);
     }
 
     function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
         updateRewardForUser(_user);
         rewardAmount = rewardClaimable[_user];
-        TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
         rewardClaimable[_user] = 0;
         totalRewardClaimable -= rewardAmount;
+        TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
         emit ClaimOnRewarder(_user, _to, rewardAmount);
     }
 
@@ -153,6 +154,9 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     // --------------------- Admin Functions --------------------- //
 
     function setStakingManager(address _manager) external onlyAdmin {
+        if (address(stakingManager) != address(0)) {
+            setAdmin(address(stakingManager), false);
+        }
         stakingManager = IWooStakingManager(_manager);
         setAdmin(_manager, true);
         emit SetStakingManagerOnRewarder(_manager);
