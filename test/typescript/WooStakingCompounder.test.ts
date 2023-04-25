@@ -53,7 +53,7 @@ describe("WooStakingCompounder tests", () => {
 
         stakingManager = await deployMockContract(owner, WooStakingManagerArtifact.abi);
         await stakingManager.mock.owner.returns(owner.address);
-        await stakingManager.mock.compoundAll.returns();
+        await stakingManager.mock.compoundAllForUsers.returns();
 
         compounder = (await deployContract(owner, WooStakingCompounderArtifact, [stakingManager.address])) as WooStakingCompounder;
     });

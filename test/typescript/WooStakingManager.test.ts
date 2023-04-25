@@ -391,6 +391,23 @@ describe("WooStakingManager tests", () => {
 
     });
 
+    it("CompoundAllForUsers Tests", async () => {
+        await stakingManager.setWooPP(testWooPP.address);
+        await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
+        await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
+        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
+        await stakingManager.stakeWoo(user1.address, utils.parseEther("20"));
+        await stakingManager.stakeWoo(user2.address, utils.parseEther("10"));
+        await mine(5);
+
+        await _logUserPending();
+        await stakingManager.compoundAllForUsers([user1.address, user2.address]);
+        let amount1 = await rewarder1.pendingReward(user1.address);
+        let amount2 = await rewarder1.pendingReward(user2.address);
+        expect(amount1).to.eq(0);
+        expect(amount2).to.eq(0);
+    });
+
     async function _logUserWoo() {
         let woo1 = utils.formatEther(await stakingManager.wooBalance(user1.address));
         let woo2 = utils.formatEther(await stakingManager.wooBalance(user2.address));

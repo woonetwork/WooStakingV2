@@ -46,6 +46,8 @@ interface IWooStakingManager {
 
     function compoundAll(address _user) external;
 
+    function compoundAllForUsers(address[] memory _users) external;
+
     function setAutoCompound(address _user, bool _flag) external;
 
     function pendingRewards(

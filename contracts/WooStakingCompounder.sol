@@ -121,21 +121,18 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
     }
 
     function compoundAll() external onlyAdmin {
-        unchecked {
-            uint256 len = users.length();
-            for (uint256 i = 0; i < len; ++i) {
-                stakingManager.compoundAll(users.at(i));
-            }
-        }
+        stakingManager.compoundAllForUsers(users.values());
     }
 
     function compound(uint256 start, uint256 end) external onlyAdmin {
         // range: [start, end)
+        address[] memory _users = new address[](end - start);
         unchecked {
             for (uint256 i = start; i < end; ++i) {
-                stakingManager.compoundAll(users.at(i));
+                _users[i] = users.at(i);
             }
         }
+        stakingManager.compoundAllForUsers(_users);
     }
 
     function allUsers() external view returns (address[] memory) {

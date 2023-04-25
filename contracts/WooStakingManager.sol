@@ -203,6 +203,40 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit CompoundAllOnStakingManager(_user);
     }
 
+    function compoundAllForUsers(address[] memory _users) external onlyAdmin {
+        uint256 len = _users.length;
+        unchecked {
+            for (uint256 i = 0; i < len; ++i) {
+                compoundMP(_users[i]);
+            }
+        }
+
+        address selfAddr = address(this);
+        uint256[] memory rewards = new uint256[](len);
+        for (uint256 i = 0; i < rewarders.length(); ++i) {
+            uint256 totalReward = 0;
+            IRewarder _rewarder = IRewarder(rewarders.at(i));
+            // claim token
+            for (uint256 j = 0; j < len; ++j) {
+                uint256 rewardAmount = _rewarder.claim(_users[j], address(wooPP));
+                rewards[j] = rewardAmount;
+                totalReward += rewardAmount;
+            }
+            // swap
+            uint256 wooTotalAmount = 0;
+            address rewardToken = _rewarder.rewardToken();
+            if (rewardToken == woo) {
+                wooTotalAmount = totalReward;
+            } else {
+                wooTotalAmount = wooPP.swap(rewardToken, woo, totalReward, 0, selfAddr, selfAddr);
+            }
+            TransferHelper.safeApprove(woo, address(stakingLocal), wooTotalAmount);
+            for (uint256 j = 0; j < len; ++j) {
+                stakingLocal.stake(_users[j], (wooTotalAmount * rewards[j]) / totalReward);
+            }
+        }
+    }
+
     function compoundMP(address _user) public onlyAdmin {
         // Caution: since user weight is related to mp balance, force update rewards and debts.
         uint256 i;
