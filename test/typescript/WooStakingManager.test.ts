@@ -95,6 +95,7 @@ describe("WooStakingManager tests", () => {
         await wethToken.mint(testWooPP.address, utils.parseEther("1000"));
 
         local = await deployMockContract(owner, WooStakingLocalArtifact.abi);
+        await local.mock.stakeForUsers.returns();
         await local.mock.stake.returns();
     });
 

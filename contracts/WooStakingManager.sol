@@ -211,9 +211,12 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
             }
         }
 
-        address selfAddr = address(this);
         uint256[] memory rewards = new uint256[](len);
-        for (uint256 i = 0; i < rewarders.length(); ++i) {
+        address selfAddr = address(this);
+        uint256[] memory wooRewards = new uint256[](len);
+        uint256 wooTotalAmount = 0;
+        uint256 rewarderLen = rewarders.length();
+        for (uint256 i = 0; i < rewarderLen; ++i) {
             uint256 totalReward = 0;
             IRewarder _rewarder = IRewarder(rewarders.at(i));
             // claim token
@@ -223,18 +226,23 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
                 totalReward += rewardAmount;
             }
             // swap
-            uint256 wooTotalAmount = 0;
+            uint256 rewarderTotalWoo = 0;
             address rewardToken = _rewarder.rewardToken();
             if (rewardToken == woo) {
-                wooTotalAmount = totalReward;
+                rewarderTotalWoo = totalReward;
             } else {
-                wooTotalAmount = wooPP.swap(rewardToken, woo, totalReward, 0, selfAddr, selfAddr);
+                rewarderTotalWoo = wooPP.swap(rewardToken, woo, totalReward, 0, selfAddr, selfAddr);
             }
-            TransferHelper.safeApprove(woo, address(stakingLocal), wooTotalAmount);
             for (uint256 j = 0; j < len; ++j) {
-                stakingLocal.stake(_users[j], (wooTotalAmount * rewards[j]) / totalReward);
+                wooRewards[j] += (rewarderTotalWoo * rewards[j]) / totalReward;
             }
+            wooTotalAmount += rewarderTotalWoo;
         }
+        if (wooTotalAmount > 0) {
+            TransferHelper.safeApprove(woo, address(stakingLocal), wooTotalAmount);
+            stakingLocal.stakeForUsers(_users, wooRewards, wooTotalAmount);
+        }
+        emit compoundAllForUsersOnStakingManager(_users);
     }
 
     function compoundMP(address _user) public onlyAdmin {
