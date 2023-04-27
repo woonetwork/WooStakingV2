@@ -162,4 +162,17 @@ describe("WooStakingLocal tests", () => {
         await stakingLocal.compoundAll();
     });
 
+    it("StakeForUsers local tests", async () => {
+        expect(await stakingLocal.balances(owner.address)).to.be.equal(0);
+        expect(await stakingLocal.balances(user1.address)).to.be.equal(0);
+
+        await wooToken.approve(stakingLocal.address, 600);
+        await stakingLocal.stakeForUsers([owner.address, user1.address], [100, 500], 600);
+
+        await mine(5);
+
+        expect(await stakingLocal.balances(owner.address)).to.be.equal(100);
+        expect(await stakingLocal.balances(user1.address)).to.be.equal(500);
+    });
+
 });

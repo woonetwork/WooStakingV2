@@ -70,6 +70,21 @@ contract WooStakingLocal is IWooStakingLocal, BaseAdminOperation, ReentrancyGuar
         _stake(_user, _amount);
     }
 
+    function stakeForUsers(
+        address[] memory _users,
+        uint256[] memory _amounts,
+        uint256 _total
+    ) external whenNotPaused onlyAdmin {
+        uint256 len = _users.length;
+        want.safeTransferFrom(msg.sender, address(this), _total);
+        for (uint256 i = 0; i < len; ++i) {
+            address _user = _users[i];
+            balances[_user] += _amounts[i];
+            stakingManager.stakeWoo(_user, _amounts[i]);
+        }
+        emit StakeForUsersOnLocal(_users, _amounts, _total);
+    }
+
     function _stake(address _user, uint256 _amount) internal {
         want.safeTransferFrom(msg.sender, address(this), _amount);
         balances[_user] += _amount;

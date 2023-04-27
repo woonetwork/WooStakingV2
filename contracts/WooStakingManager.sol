@@ -203,6 +203,48 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit CompoundAllOnStakingManager(_user);
     }
 
+    function compoundAllForUsers(address[] memory _users) external onlyAdmin {
+        uint256 len = _users.length;
+        unchecked {
+            for (uint256 i = 0; i < len; ++i) {
+                compoundMP(_users[i]);
+            }
+        }
+
+        uint256[] memory rewards = new uint256[](len);
+        address selfAddr = address(this);
+        uint256[] memory wooRewards = new uint256[](len);
+        uint256 wooTotalAmount = 0;
+        uint256 rewarderLen = rewarders.length();
+        for (uint256 i = 0; i < rewarderLen; ++i) {
+            uint256 totalReward = 0;
+            IRewarder _rewarder = IRewarder(rewarders.at(i));
+            // claim token
+            for (uint256 j = 0; j < len; ++j) {
+                uint256 rewardAmount = _rewarder.claim(_users[j], address(wooPP));
+                rewards[j] = rewardAmount;
+                totalReward += rewardAmount;
+            }
+            // swap
+            uint256 rewarderTotalWoo = 0;
+            address rewardToken = _rewarder.rewardToken();
+            if (rewardToken == woo) {
+                rewarderTotalWoo = totalReward;
+            } else {
+                rewarderTotalWoo = wooPP.swap(rewardToken, woo, totalReward, 0, selfAddr, selfAddr);
+            }
+            for (uint256 j = 0; j < len; ++j) {
+                wooRewards[j] += (rewarderTotalWoo * rewards[j]) / totalReward;
+            }
+            wooTotalAmount += rewarderTotalWoo;
+        }
+        if (wooTotalAmount > 0) {
+            TransferHelper.safeApprove(woo, address(stakingLocal), wooTotalAmount);
+            stakingLocal.stakeForUsers(_users, wooRewards, wooTotalAmount);
+        }
+        emit compoundAllForUsersOnStakingManager(_users);
+    }
+
     function compoundMP(address _user) public onlyAdmin {
         // Caution: since user weight is related to mp balance, force update rewards and debts.
         uint256 i;

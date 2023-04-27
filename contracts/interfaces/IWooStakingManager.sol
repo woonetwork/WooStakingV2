@@ -11,6 +11,7 @@ interface IWooStakingManager {
     event CompoundMPOnStakingManager(address indexed user);
     event CompoundRewardsOnStakingManager(address indexed user);
     event CompoundAllOnStakingManager(address indexed user);
+    event compoundAllForUsersOnStakingManager(address[] users);
     event SetAutoCompoundOnStakingManager(address indexed user, bool flag);
     event SetMPRewarderOnStakingManager(address indexed rewarder);
     event SetWooPPOnStakingManager(address indexed wooPP);
@@ -45,6 +46,8 @@ interface IWooStakingManager {
     function compoundRewards(address _user) external;
 
     function compoundAll(address _user) external;
+
+    function compoundAllForUsers(address[] memory _users) external;
 
     function setAutoCompound(address _user, bool _flag) external;
 

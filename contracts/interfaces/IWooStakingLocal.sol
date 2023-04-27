@@ -8,6 +8,7 @@ interface IWooStakingLocal {
     /* ----- Events ----- */
 
     event StakeOnLocal(address indexed user, uint256 amount);
+    event StakeForUsersOnLocal(address[] users, uint256[] amounts, uint256 total);
     event UnstakeOnLocal(address indexed user, uint256 amount);
     event SetAutoCompoundOnLocal(address indexed user, bool flag);
     event CompoundMPOnLocal(address indexed user);
@@ -25,6 +26,8 @@ interface IWooStakingLocal {
     function stake(uint256 _amount) external;
 
     function stake(address _user, uint256 _amount) external;
+
+    function stakeForUsers(address[] memory _users, uint256[] memory _amounts, uint256 _total) external;
 
     function unstake(uint256 _amount) external;
 
