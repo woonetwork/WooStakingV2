@@ -112,14 +112,14 @@ async function setupContracts() {
   ] = await getContracts();
 
   await wooStakingProxy.setTrustedRemoteAddress(
-    constants.lz_fantom_chainid, wooStakingController.address,
+    constants.lz_chainid, wooStakingController.address,
   );
   await sleep(constants.sleepSeconds);
   console.log("wooStakingProxy.setTrustedRemoteAddress: %s", wooStakingController.address);
 
 
   await wooStakingController.setTrustedRemoteAddress(
-    constants.lz_fantom_chainid, wooStakingProxy.address,
+    constants.lz_chainid, wooStakingProxy.address,
   );
   await sleep(constants.sleepSeconds);
   console.log("wooStakingController.setTrustedRemoteAddress: %s", wooStakingProxy.address);

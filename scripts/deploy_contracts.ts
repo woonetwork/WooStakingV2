@@ -61,7 +61,7 @@ async function deployContracts() {
   await verify(stakingLocal, args);
 
   contractName = "WooStakingController";
-  args = [constants.depAddressList["lz_fantom_endpoint"], stakingManager];
+  args = [constants.lz_endpoint, stakingManager];
   const stakingController = await deploy(args, contractName);
   console.log(`${contractName} deployed to: ${stakingController}`);
   contracts.set(contractName, stakingController);
@@ -70,8 +70,8 @@ async function deployContracts() {
 
   contractName = "WooStakingProxy";
   args = [
-    constants.depAddressList["lz_fantom_endpoint"],
-    constants.lz_fantom_chainid,
+    constants.lz_endpoint,
+    constants.lz_chainid,
     stakingController,
     constants.depAddressList["woo"],
   ];
@@ -124,12 +124,71 @@ async function deployContracts() {
 
 }
 
+function loadJsonFile() {
+  const filePath = constants.stakingContractsFile;
+  const data = fs.readFileSync(filePath);
+  let jsonObject = JSON.parse(data);
+  return jsonObject;
+}
+
+// NOTE: Sometimes verify contracts failed.
+// Need run this func mannually.
+async function verifyContracts() {
+  const contracts = loadJsonFile();
+  
+  const depAddressList = constants.depAddressList;
+
+
+  let args = [depAddressList["woo"]];
+  let contractName = "WooStakingManager";
+  let stakingManager = contracts[contractName];
+  await verify(contracts[contractName], args);
+
+  contractName = "WooStakingLocal";
+  args = [depAddressList["woo"], contracts["WooStakingManager"]];
+  await verify(contracts[contractName], args);
+
+  contractName = "WooStakingController";
+  args = [constants.lz_endpoint, contracts["WooStakingManager"]];
+  await verify(contracts[contractName], args);
+
+  contractName = "WooStakingProxy";
+  args = [
+    constants.lz_endpoint,
+    constants.lz_chainid,
+    contracts["WooStakingController"],
+    constants.depAddressList["woo"],
+  ];
+  await verify(contracts[contractName], args);
+
+  contractName = "MpRewarder";
+  args = [contracts["WooStakingManager"]];
+  await verify(contracts[contractName], args);
+
+  args = [constants.depAddressList["usdc"], contracts["WooStakingManager"]];
+  await verify(contracts["UsdcRewarder"], args);
+
+  args = [constants.depAddressList["weth"], stakingManager];
+  await verify(contracts["WethRewarder"], args);
+
+  contractName = "WooStakingCompounder";
+  args = [stakingManager];
+  await verify(contracts[contractName], args);
+
+  contractName = "RewardBooster";
+  args = [contracts["MpRewarder"], contracts["WooStakingCompounder"]];
+  await verify(contracts[contractName], args);
+}
+
 async function main() {
   // let contracts = new Map<string, string>;
   // contracts.set("stakingManager", "0x00");
   // writeJsonFile(contracts);
 
   await deployContracts();
+
+  // await verifyContracts();
+
 }
 
 main().catch((error) => {
