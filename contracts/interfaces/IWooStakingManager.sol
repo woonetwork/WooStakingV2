@@ -11,7 +11,7 @@ interface IWooStakingManager {
     event CompoundMPOnStakingManager(address indexed user);
     event CompoundRewardsOnStakingManager(address indexed user, uint256 wooAmount);
     event CompoundAllOnStakingManager(address indexed user);
-    event compoundAllForUsersOnStakingManager(address[] users, uint256[] wooRewards);
+    event CompoundAllForUsersOnStakingManager(address[] users, uint256[] wooRewards);
     event SetAutoCompoundOnStakingManager(address indexed user, bool flag);
     event SetMPRewarderOnStakingManager(address indexed rewarder);
     event SetWooPPOnStakingManager(address indexed wooPP);

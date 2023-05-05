@@ -247,7 +247,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
             TransferHelper.safeApprove(woo, address(stakingLocal), wooTotalAmount);
             stakingLocal.stakeForUsers(_users, wooRewards, wooTotalAmount);
         }
-        emit compoundAllForUsersOnStakingManager(_users, wooRewards);
+        emit CompoundAllForUsersOnStakingManager(_users, wooRewards);
     }
 
     function compoundMP(address _user) public onlyAdmin {
