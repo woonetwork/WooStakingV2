@@ -59,6 +59,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
     IWooStakingLocal public stakingLocal;
 
     address public immutable woo;
+    uint256 public baseTier;
 
     IRewarder public mpRewarder; // Record and distribute MP rewards
     EnumerableSet.AddressSet private rewarders; // Other general rewards (e.g. usdc, eth, op, etc)
@@ -67,6 +68,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     constructor(address _woo) {
         woo = _woo;
+        baseTier = 1800e18;
     }
 
     modifier onlyMpRewarder() {
@@ -190,7 +192,10 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     function setAutoCompound(address _user, bool _flag) external onlyAdmin {
         if (_flag) {
-            compounder.addUser(_user);
+            // x is able to set, default:1,800
+            if (wooBalance[_user] >= baseTier) {
+                compounder.addUser(_user);
+            }
         } else {
             compounder.removeUser(_user);
         }
@@ -242,7 +247,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
             TransferHelper.safeApprove(woo, address(stakingLocal), wooTotalAmount);
             stakingLocal.stakeForUsers(_users, wooRewards, wooTotalAmount);
         }
-        emit compoundAllForUsersOnStakingManager(_users);
+        emit compoundAllForUsersOnStakingManager(_users, wooRewards);
     }
 
     function compoundMP(address _user) public onlyAdmin {
@@ -294,7 +299,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
             stakingLocal.stake(_user, wooAmount);
         }
 
-        emit CompoundRewardsOnStakingManager(_user);
+        emit CompoundRewardsOnStakingManager(_user, wooAmount);
     }
 
     // --------------------- Admin Maintain Functions --------------------- //
@@ -388,5 +393,10 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         stakingLocal = IWooStakingLocal(_stakingLocal);
         setAdmin(_stakingLocal, true);
         emit SetStakingLocalOnStakingManager(_stakingLocal);
+    }
+
+    function setBaseTier(uint256 _baseTier) external onlyOwner {
+        baseTier = _baseTier;
+        emit SetBaseTierOnStakingManager(_baseTier);
     }
 }
