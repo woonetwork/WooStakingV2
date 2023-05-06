@@ -380,6 +380,11 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit SetCompounderOnStakingManager(_compounder);
     }
 
+    function setBaseTier(uint256 _baseTier) external onlyAdmin {
+        baseTier = _baseTier;
+        emit SetBaseTierOnStakingManager(_baseTier);
+    }
+
     function setWooPP(address _wooPP) external onlyOwner {
         wooPP = IWooPPV2(_wooPP);
         emit SetWooPPOnStakingManager(_wooPP);
@@ -393,10 +398,5 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         stakingLocal = IWooStakingLocal(_stakingLocal);
         setAdmin(_stakingLocal, true);
         emit SetStakingLocalOnStakingManager(_stakingLocal);
-    }
-
-    function setBaseTier(uint256 _baseTier) external onlyOwner {
-        baseTier = _baseTier;
-        emit SetBaseTierOnStakingManager(_baseTier);
     }
 }
