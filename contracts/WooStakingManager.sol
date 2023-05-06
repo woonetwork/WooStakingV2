@@ -192,7 +192,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     function setAutoCompound(address _user, bool _flag) external onlyAdmin {
         if (_flag) {
-            // x is able to set, default:1,800
+            // baseTier is able to set, default: 1,800
             if (wooBalance[_user] >= baseTier) {
                 compounder.addUser(_user);
             }
