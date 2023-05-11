@@ -1,10 +1,26 @@
 // Fantom address list.
-const fantomDepAddressList = {
+export const fantomDepAddressList = {
   "woo": "0x6626c47c00F1D87902fc13EECfaC3ed06D5E8D8a",
   "wooPP": "0x286ab107c5E9083dBed35A2B5fb0242538F4f9bf",
   "usdc": "0x04068DA6C83AFCFA0e13ba15A6696662335D5B75",
   "weth": "0x74b23882a30290451A17c44f4F05243b6b58C76d",
 };
+
+export const bscDepAddressList = {
+  "woo": "0x4691937a7508860F876c9c0a2a617E7d9E945D4B",
+};
+
+export const avalancheDepAddressList = {
+  "woo": "0xaBC9547B534519fF73921b1FBA6E672b5f58D083",
+}
+
+export const polygonDepAddressList = {
+  "woo": "0x1B815d120B3eF02039Ee11dC2d33DE7aA4a8C603",
+}
+
+export const opDepAddressList = {
+  "woo": "0x871f2F2ff935FD1eD867842FF2a7bfD051A5E527",
+}
 
 // WooPP address doc: https://learn.woo.org/v/woofi-dev-docs/references/readme
 // Arbitrum address list.
@@ -17,10 +33,24 @@ export const depAddressList = {
 
 // LayerZero chain ids.
 // Doc: https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
-const lz_fantom_chainid = 112;
-const lz_fantom_endpoint = "0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7";
-const lz_arbitrum_endpoint = "0x3c2269811836af69497E5F486A85D7316753cf62";
-const lz_arbitrum_chainid = 110;
+export const lz_fantom_chainid = 112;
+export const lz_fantom_endpoint = "0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7";
+
+export const lz_bsc_chainid = 102;
+export const lz_bsc_endpoint = "0x3c2269811836af69497E5F486A85D7316753cf62";
+
+export const lz_avalanche_chainid = 106;
+export const lz_avalanche_endpoint = "0x3c2269811836af69497E5F486A85D7316753cf62";
+
+export const lz_polygon_chainid = 109;
+export const lz_polygon_endpoint = "0x3c2269811836af69497E5F486A85D7316753cf62";
+
+export const lz_op_chainid = 111;
+export const lz_op_endpoint = "0x3c2269811836af69497E5F486A85D7316753cf62";
+
+
+export const lz_arbitrum_endpoint = "0x3c2269811836af69497E5F486A85D7316753cf62";
+export const lz_arbitrum_chainid = 110;
 
 export const lz_chainid = lz_arbitrum_chainid;
 export const lz_endpoint = lz_arbitrum_endpoint;
