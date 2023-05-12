@@ -228,9 +228,9 @@ async function tempSetUserRatios() {
 async function main() {
   await setupContracts();
   await setupRewarders();
-  await setUserAdmin(constants.user1);
+  // await setUserAdmin(constants.user1);
   await setUserAdmin(constants.user2);
-  await setUserAdmin(constants.user3);
+  // await setUserAdmin(constants.user3);
 }
 
 main().catch((error) => {
