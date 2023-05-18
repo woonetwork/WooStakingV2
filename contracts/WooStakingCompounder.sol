@@ -146,6 +146,17 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         return _users;
     }
 
+    // range: [start, end)
+    function allUsers(uint256 start, uint256 end) external view returns (address[] memory) {
+        address[] memory _users = new address[](end - start);
+        unchecked {
+            for (uint256 i = start; i < end; ++i) {
+                _users[i] = users.at(i);
+            }
+        }
+        return _users;
+    }
+
     function allUsersLength() external view returns (uint256) {
         return users.length();
     }

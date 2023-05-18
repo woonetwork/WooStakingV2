@@ -81,9 +81,20 @@ describe("WooStakingCompounder tests", () => {
         expect(await compounder.contains(user1.address)).to.be.eq(false);
         expect(await compounder.allUsersLength()).to.be.eq(2);
 
-        let allUsers = await compounder.allUsers();
+        let allUsers = await compounder["allUsers()"]();
         expect(allUsers[0]).to.be.eq(owner.address);
         expect(allUsers[1]).to.be.eq(user2.address);
+
+        let allUsersWithRange = await compounder["allUsers(uint256,uint256)"](0, 1);
+        expect(allUsersWithRange.length).to.be.eq(1);
+        expect(allUsers[0]).to.be.eq(owner.address);
+
+        allUsersWithRange = await compounder["allUsers(uint256,uint256)"](0, 2);
+        expect(allUsersWithRange.length).to.be.eq(2);
+        expect(allUsers[0]).to.be.eq(owner.address);
+        expect(allUsers[1]).to.be.eq(user2.address);
+
+        await expect(compounder["allUsers(uint256,uint256)"](0, 3)).to.be.reverted;
 
         await compounder.compound(0, 1);
         await compounder.compoundAll();
