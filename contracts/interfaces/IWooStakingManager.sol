@@ -16,7 +16,6 @@ interface IWooStakingManager {
     event SetMPRewarderOnStakingManager(address indexed rewarder);
     event SetWooPPOnStakingManager(address indexed wooPP);
     event SetStakingLocalOnStakingManager(address indexed stakingProxy);
-    event SetAutoCompThresholdOnStakingManager(uint256 autoCompThreshold);
     event SetCompounderOnStakingManager(address indexed compounder);
     event AddRewarderOnStakingManager(address indexed rewarder);
     event RemoveRewarderOnStakingManager(address indexed rewarder);
@@ -55,6 +54,4 @@ interface IWooStakingManager {
     function pendingRewards(
         address _user
     ) external view returns (uint256 mpRewardAmount, address[] memory rewardTokens, uint256[] memory amounts);
-
-    function autoCompThreshold() external view returns (uint256);
 }

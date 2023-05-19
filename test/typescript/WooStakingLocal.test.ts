@@ -78,7 +78,7 @@ describe("WooStakingLocal tests", () => {
         compounder = await deployMockContract(owner, WooStakingCompounderArtifact.abi);
         await compounder.mock.contains.returns(true);
         await compounder.mock.isAdmin.withArgs(stakingManager.address).returns(true);
-        await compounder.mock.removeUserIfNeeded.returns(true);
+        await compounder.mock.removeUserIfThresholdFail.returns(true);
         await stakingManager.setCompounder(compounder.address);
 
         mpRewarder = (await deployContract(owner, MpRewarderArtifact, [stakingManager.address])) as MpRewarder;

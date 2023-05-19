@@ -11,7 +11,9 @@ interface IWooStakingCompounder {
 
     function addUser(address _user) external;
 
+    function addUserIfThresholdMeet(address _user) external returns (bool added);
+
     function removeUser(address _user) external returns (bool removed);
 
-    function removeUserIfNeeded(address _user) external returns (bool removed);
+    function removeUserIfThresholdFail(address _user) external returns (bool removed);
 }
