@@ -78,7 +78,7 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         actionToDstGas[ACTION_UNSTAKE] = 600000;
         actionToDstGas[ACTION_SET_AUTO_COMPOUND] = 600000;
         actionToDstGas[ACTION_COMPOUND_MP] = 600000;
-        actionToDstGas[ACTION_COMPOUND_ALL] = 600000;
+        actionToDstGas[ACTION_COMPOUND_ALL] = 900000;
     }
 
     function estimateFees(uint8 _action, uint256 _amount) public view returns (uint256 messageFee) {
