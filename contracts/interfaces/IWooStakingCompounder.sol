@@ -12,4 +12,6 @@ interface IWooStakingCompounder {
     function addUser(address _user) external;
 
     function removeUser(address _user) external returns (bool removed);
+
+    function removeUserIfNeeded(address _user) external returns (bool removed);
 }

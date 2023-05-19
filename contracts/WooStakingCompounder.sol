@@ -64,10 +64,6 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         cooldownDuration = 7 days;
     }
 
-    function addUser() external {
-        _addUser(msg.sender);
-    }
-
     function addUser(address _user) external onlyAdmin {
         _addUser(_user);
     }
@@ -76,10 +72,6 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         lastAddedTs[_user] = block.timestamp;
         users.add(_user);
         emit AddUser(_user);
-    }
-
-    function removeUser() external returns (bool removed) {
-        removed = _removeUser(msg.sender);
     }
 
     function removeUser(address _user) external onlyAdmin returns (bool removed) {
@@ -94,6 +86,21 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         if (_ts > 0 && block.timestamp > _ts && block.timestamp - _ts < cooldownDuration) {
             // Still in cooldown, abort the removing action
             emit RemoveAbortedInCooldown(_user);
+            return false;
+        }
+        users.remove(_user);
+        lastAddedTs[_user] = 0;
+        emit RemoveUser(_user);
+        return true;
+    }
+
+    function removeUserIfNeeded(address _user) external onlyAdmin returns (bool removed) {
+        if (!users.contains(_user)) {
+            return false;
+        }
+        uint256 userWooBalance = stakingManager.wooBalance(_user);
+        uint256 autoCompThreshold = stakingManager.autoCompThreshold();
+        if (userWooBalance >= autoCompThreshold) {
             return false;
         }
         users.remove(_user);
@@ -129,7 +136,7 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         address[] memory _users = new address[](end - start);
         unchecked {
             for (uint256 i = start; i < end; ++i) {
-                _users[i] = users.at(i);
+                _users[i - start] = users.at(i);
             }
         }
         stakingManager.compoundAllForUsers(_users);
@@ -141,6 +148,17 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         unchecked {
             for (uint256 i = 0; i < len; ++i) {
                 _users[i] = users.at(i);
+            }
+        }
+        return _users;
+    }
+
+    // range: [start, end)
+    function allUsers(uint256 start, uint256 end) external view returns (address[] memory) {
+        address[] memory _users = new address[](end - start);
+        unchecked {
+            for (uint256 i = start; i < end; ++i) {
+                _users[i - start] = users.at(i);
             }
         }
         return _users;

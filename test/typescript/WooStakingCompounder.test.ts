@@ -59,7 +59,7 @@ describe("WooStakingCompounder tests", () => {
     });
 
     it("User Tests", async () => {
-        await expect(compounder["addUser()"]())
+        await expect(compounder.addUser(owner.address))
             .to.emit(compounder, "AddUser")
             .withArgs(owner.address);
         await expect(compounder.addUsers([user1.address, user2.address]))
@@ -68,7 +68,7 @@ describe("WooStakingCompounder tests", () => {
         let totalUsers = await compounder.allUsersLength();
         expect(totalUsers).to.be.eq(3);
 
-        await expect(compounder["removeUser()"]())
+        await expect(compounder.removeUser(owner.address))
             .to.emit(compounder, "RemoveAbortedInCooldown")
             .withArgs(owner.address);
 
@@ -81,9 +81,33 @@ describe("WooStakingCompounder tests", () => {
         expect(await compounder.contains(user1.address)).to.be.eq(false);
         expect(await compounder.allUsersLength()).to.be.eq(2);
 
-        let allUsers = await compounder.allUsers();
+        await expect(compounder.addUser(user1.address))
+            .to.emit(compounder, "AddUser")
+            .withArgs(user1.address);
+        expect(await compounder.contains(user1.address)).to.be.eq(true);
+        expect(await compounder.allUsersLength()).to.be.eq(3);
+
+        let allUsers = await compounder["allUsers()"]();
         expect(allUsers[0]).to.be.eq(owner.address);
         expect(allUsers[1]).to.be.eq(user2.address);
+        expect(allUsers[2]).to.be.eq(user1.address);
+
+        let allUsersWithRange = await compounder["allUsers(uint256,uint256)"](0, 1);
+        expect(allUsersWithRange.length).to.be.eq(1);
+        expect(allUsersWithRange[0]).to.be.eq(owner.address);
+
+        allUsersWithRange = await compounder["allUsers(uint256,uint256)"](1, 3);
+        expect(allUsersWithRange.length).to.be.eq(2);
+        expect(allUsersWithRange[0]).to.be.eq(user2.address);
+        expect(allUsersWithRange[1]).to.be.eq(user1.address);
+
+        allUsersWithRange = await compounder["allUsers(uint256,uint256)"](0, 3);
+        expect(allUsersWithRange.length).to.be.eq(3);
+        expect(allUsersWithRange[0]).to.be.eq(owner.address);
+        expect(allUsersWithRange[1]).to.be.eq(user2.address);
+        expect(allUsersWithRange[2]).to.be.eq(user1.address);
+
+        await expect(compounder["allUsers(uint256,uint256)"](0, 4)).to.be.reverted;
 
         await compounder.compound(0, 1);
         await compounder.compoundAll();

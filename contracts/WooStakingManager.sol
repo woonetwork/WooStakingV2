@@ -59,7 +59,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
     IWooStakingLocal public stakingLocal;
 
     address public immutable woo;
-    uint256 public baseTier;
+    uint256 public autoCompThreshold;
 
     IRewarder public mpRewarder; // Record and distribute MP rewards
     EnumerableSet.AddressSet private rewarders; // Other general rewards (e.g. usdc, eth, op, etc)
@@ -68,7 +68,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     constructor(address _woo) {
         woo = _woo;
-        baseTier = 1800e18;
+        autoCompThreshold = 1800e18;
     }
 
     modifier onlyMpRewarder() {
@@ -117,6 +117,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         mpTotalBalance -= burnAmount;
 
         _clearRewardsToDebt(_user);
+
+        compounder.removeUserIfNeeded(_user);
 
         if (wooBalance[_user] == 0) {
             stakers.remove(_user);
@@ -192,8 +194,8 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     function setAutoCompound(address _user, bool _flag) external onlyAdmin {
         if (_flag) {
-            // baseTier is able to set, default: 1,800
-            if (wooBalance[_user] >= baseTier) {
+            // autoCompThreshold is able to set, default: 1,800
+            if (wooBalance[_user] >= autoCompThreshold) {
                 compounder.addUser(_user);
             }
         } else {
@@ -344,7 +346,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         address[] memory _stakers = new address[](end - start);
         unchecked {
             for (uint256 i = start; i < end; ++i) {
-                _stakers[i] = stakers.at(i);
+                _stakers[i - start] = stakers.at(i);
             }
         }
         return _stakers;
@@ -380,9 +382,9 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         emit SetCompounderOnStakingManager(_compounder);
     }
 
-    function setBaseTier(uint256 _baseTier) external onlyAdmin {
-        baseTier = _baseTier;
-        emit SetBaseTierOnStakingManager(_baseTier);
+    function setAutoCompThreshold(uint256 _autoCompThreshold) external onlyAdmin {
+        autoCompThreshold = _autoCompThreshold;
+        emit SetAutoCompThresholdOnStakingManager(_autoCompThreshold);
     }
 
     function setWooPP(address _wooPP) external onlyOwner {

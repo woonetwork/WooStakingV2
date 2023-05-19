@@ -13,6 +13,7 @@ contract TestStakingManager is IWooStakingManager, BaseAdminOperation {
     mapping(address => uint256) public mpBalance;
     uint256 public mpTotalBalance;
     uint256 public wooTotalBalance;
+    uint256 public autoCompThreshold;
     IRewarder public mpRewarder; // Record and distribute MP rewards
 
     modifier onlyMpRewarder() {
