@@ -72,14 +72,15 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
 
     function pendingReward(address _user) external view returns (uint256 rewardAmount) {
         uint256 _totalWeight = totalWeight();
-        uint256 _tokenPerShare = accTokenPerShare;
+        uint256 _userWeight = weight(_user);
+        uint256 _userReward = (accTokenPerShare * _userWeight) / 1e18;
 
         if (_totalWeight != 0) {
             uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
-            _tokenPerShare += (rewards * 1e18) / _totalWeight;
+            _userReward += (rewards * _userWeight) / _totalWeight;
         }
 
-        uint256 newUserReward = (weight(_user) * _tokenPerShare) / 1e18 - rewardDebt[_user];
+        uint256 newUserReward = _userReward - rewardDebt[_user];
         return rewardClaimable[_user] + newUserReward;
     }
 
