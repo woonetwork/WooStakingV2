@@ -48,6 +48,7 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
     event RemoveAbortedInCooldown(address indexed user);
     event SetStakingManagerOnCompounder(address indexed manager);
     event SetCooldownDuration(uint256 duration);
+    event SetAutoCompThreshold(uint256 autoCompThreshold);
 
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -57,11 +58,19 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
 
     uint256 public cooldownDuration;
 
+    uint256 public autoCompThreshold;
+
     EnumerableSet.AddressSet private users;
 
     constructor(address _stakingManager) {
         stakingManager = IWooStakingManager(_stakingManager);
         cooldownDuration = 7 days;
+        autoCompThreshold = 1800e18;
+    }
+
+    function setAutoCompThreshold(uint256 _autoCompThreshold) external onlyAdmin {
+        autoCompThreshold = _autoCompThreshold;
+        emit SetAutoCompThreshold(_autoCompThreshold);
     }
 
     function addUser(address _user) external onlyAdmin {
@@ -94,12 +103,23 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         return true;
     }
 
-    function removeUserIfNeeded(address _user) external onlyAdmin returns (bool removed) {
+    function addUserIfThresholdMeet(address _user) external onlyAdmin returns (bool added) {
+        if (users.contains(_user)) {
+            return false;
+        }
+        uint256 userWooBalance = stakingManager.wooBalance(_user);
+        if (userWooBalance < autoCompThreshold) {
+            return false;
+        }
+        _addUser(_user);
+        return true;
+    }
+
+    function removeUserIfThresholdFail(address _user) external onlyAdmin returns (bool removed) {
         if (!users.contains(_user)) {
             return false;
         }
         uint256 userWooBalance = stakingManager.wooBalance(_user);
-        uint256 autoCompThreshold = stakingManager.autoCompThreshold();
         if (userWooBalance >= autoCompThreshold) {
             return false;
         }

@@ -59,7 +59,6 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
     IWooStakingLocal public stakingLocal;
 
     address public immutable woo;
-    uint256 public autoCompThreshold;
 
     IRewarder public mpRewarder; // Record and distribute MP rewards
     EnumerableSet.AddressSet private rewarders; // Other general rewards (e.g. usdc, eth, op, etc)
@@ -68,7 +67,6 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     constructor(address _woo) {
         woo = _woo;
-        autoCompThreshold = 1800e18;
     }
 
     modifier onlyMpRewarder() {
@@ -118,7 +116,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
         _clearRewardsToDebt(_user);
 
-        compounder.removeUserIfNeeded(_user);
+        compounder.removeUserIfThresholdFail(_user);
 
         if (wooBalance[_user] == 0) {
             stakers.remove(_user);
@@ -194,10 +192,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
     function setAutoCompound(address _user, bool _flag) external onlyAdmin {
         if (_flag) {
-            // autoCompThreshold is able to set, default: 1,800
-            if (wooBalance[_user] >= autoCompThreshold) {
-                compounder.addUser(_user);
-            }
+            compounder.addUserIfThresholdMeet(_user);
         } else {
             compounder.removeUser(_user);
         }
@@ -380,11 +375,6 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         compounder = IWooStakingCompounder(_compounder);
         setAdmin(_compounder, true);
         emit SetCompounderOnStakingManager(_compounder);
-    }
-
-    function setAutoCompThreshold(uint256 _autoCompThreshold) external onlyAdmin {
-        autoCompThreshold = _autoCompThreshold;
-        emit SetAutoCompThresholdOnStakingManager(_autoCompThreshold);
     }
 
     function setWooPP(address _wooPP) external onlyOwner {
