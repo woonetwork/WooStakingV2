@@ -59,7 +59,7 @@ describe("WooStakingCompounder tests", () => {
     });
 
     it("User Tests", async () => {
-        await expect(compounder["addUser()"]())
+        await expect(compounder.addUser(owner.address))
             .to.emit(compounder, "AddUser")
             .withArgs(owner.address);
         await expect(compounder.addUsers([user1.address, user2.address]))
@@ -68,7 +68,7 @@ describe("WooStakingCompounder tests", () => {
         let totalUsers = await compounder.allUsersLength();
         expect(totalUsers).to.be.eq(3);
 
-        await expect(compounder["removeUser()"]())
+        await expect(compounder.removeUser(owner.address))
             .to.emit(compounder, "RemoveAbortedInCooldown")
             .withArgs(owner.address);
 
@@ -81,7 +81,7 @@ describe("WooStakingCompounder tests", () => {
         expect(await compounder.contains(user1.address)).to.be.eq(false);
         expect(await compounder.allUsersLength()).to.be.eq(2);
 
-        await expect(compounder["addUser(address)"](user1.address))
+        await expect(compounder.addUser(user1.address))
             .to.emit(compounder, "AddUser")
             .withArgs(user1.address);
         expect(await compounder.contains(user1.address)).to.be.eq(true);

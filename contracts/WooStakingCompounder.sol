@@ -64,10 +64,6 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         cooldownDuration = 7 days;
     }
 
-    function addUser() external {
-        _addUser(msg.sender);
-    }
-
     function addUser(address _user) external onlyAdmin {
         _addUser(_user);
     }
@@ -76,10 +72,6 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         lastAddedTs[_user] = block.timestamp;
         users.add(_user);
         emit AddUser(_user);
-    }
-
-    function removeUser() external returns (bool removed) {
-        removed = _removeUser(msg.sender);
     }
 
     function removeUser(address _user) external onlyAdmin returns (bool removed) {
@@ -94,6 +86,23 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         if (_ts > 0 && block.timestamp > _ts && block.timestamp - _ts < cooldownDuration) {
             // Still in cooldown, abort the removing action
             emit RemoveAbortedInCooldown(_user);
+            return false;
+        }
+        users.remove(_user);
+        lastAddedTs[_user] = 0;
+        emit RemoveUser(_user);
+        return true;
+    }
+
+    function removeUserIfNeeded(
+        address _user,
+        uint256 wooBalance,
+        uint256 autoCompThreshold
+    ) external onlyAdmin returns (bool removed) {
+        if (!users.contains(_user)) {
+            return false;
+        }
+        if (wooBalance < autoCompThreshold) {
             return false;
         }
         users.remove(_user);

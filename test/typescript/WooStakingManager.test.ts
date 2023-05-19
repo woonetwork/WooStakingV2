@@ -127,6 +127,7 @@ describe("WooStakingManager tests", () => {
 
         stakingCompounder = (await deployContract(owner, WooStakingCompounderArtifact, [stakingManager.address])) as WooStakingCompounder;
         await stakingManager.setCompounder(stakingCompounder.address);
+        await stakingCompounder.setAdmin(stakingManager.address, true);
     });
 
     it("Init Tests", async () => {
@@ -304,6 +305,8 @@ describe("WooStakingManager tests", () => {
     });
 
     it("CoolDown Tests", async () => {
+        await stakingCompounder.setAdmin(owner.address, true);
+        expect(await stakingCompounder.isAdmin(owner.address)).to.be.eq(true);
         await rewarder1.setRewardPerBlock(utils.parseEther("20"));      // usdc 20
         await rewarder2.setRewardPerBlock(utils.parseEther("1"));       // weth 1
         await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
@@ -313,13 +316,13 @@ describe("WooStakingManager tests", () => {
         await stakingManager["claimRewards()"]();
         await mine(5);
         await _logPending(owner.address, "owner");
-        await stakingCompounder["addUser()"]();
+        await stakingCompounder.addUser(user.address);
         await expect(stakingManager["claimRewards()"]()).to.be.revertedWith(
             "WooStakingManager: !COMPOUND"
         );
         await mine(10);
         await stakingCompounder.setCooldownDuration(2);
-        await stakingCompounder["removeUser()"]();
+        await stakingCompounder.removeUser(user.address);
         await _logPending(owner.address, "owner");
         await stakingManager["claimRewards()"]();
     });

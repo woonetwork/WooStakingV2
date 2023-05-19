@@ -42,7 +42,7 @@ import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManag
 import WooStakingLocalArtifact from "../../artifacts/contracts/WooStakingLocal.sol/WooStakingLocal.json";
 import TestTokenArtifact from "../../artifacts/contracts/test/TestToken.sol/TestToken.json";
 import RewardBoosterArtifact from "../../artifacts/contracts/rewarders/RewardBooster.sol/RewardBooster.json";
-import IWooStakingCompounder from "../../artifacts/contracts/interfaces/IWooStakingCompounder.sol/IWooStakingCompounder.json";
+import WooStakingCompounderArtifact from "../../artifacts/contracts/WooStakingCompounder.sol/WooStakingCompounder.json";
 import IWooPPV2Artifact from "../../artifacts/contracts/interfaces/IWooPPV2.sol/IWooPPV2.json";
 
 
@@ -75,8 +75,11 @@ describe("WooStakingLocal tests", () => {
         await wooPPv2.mock.swap.returns(10000);
         await stakingManager.setWooPP(wooPPv2.address);
 
-        compounder = await deployMockContract(owner, IWooStakingCompounder.abi);
+        compounder = await deployMockContract(owner, WooStakingCompounderArtifact.abi);
         await compounder.mock.contains.returns(true);
+        await compounder.mock.isAdmin.withArgs(stakingManager.address).returns(true);
+        await compounder.mock.removeUserIfNeeded.returns(true);
+        await stakingManager.setCompounder(compounder.address);
 
         mpRewarder = (await deployContract(owner, MpRewarderArtifact, [stakingManager.address])) as MpRewarder;
         booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address])) as RewardBooster;
