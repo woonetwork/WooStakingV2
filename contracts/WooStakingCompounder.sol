@@ -129,7 +129,7 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         address[] memory _users = new address[](end - start);
         unchecked {
             for (uint256 i = start; i < end; ++i) {
-                _users[i] = users.at(i);
+                _users[i - start] = users.at(i);
             }
         }
         stakingManager.compoundAllForUsers(_users);
@@ -149,11 +149,9 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
     // range: [start, end)
     function allUsers(uint256 start, uint256 end) external view returns (address[] memory) {
         address[] memory _users = new address[](end - start);
-        uint256 j = 0;
         unchecked {
             for (uint256 i = start; i < end; ++i) {
-                _users[j] = users.at(i);
-                ++j;
+                _users[i - start] = users.at(i);
             }
         }
         return _users;

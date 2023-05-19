@@ -344,7 +344,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         address[] memory _stakers = new address[](end - start);
         unchecked {
             for (uint256 i = start; i < end; ++i) {
-                _stakers[i] = stakers.at(i);
+                _stakers[i - start] = stakers.at(i);
             }
         }
         return _stakers;
