@@ -118,7 +118,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
         _clearRewardsToDebt(_user);
 
-        compounder.removeUserIfNeeded(_user, wooBalance[_user], autoCompThreshold);
+        compounder.removeUserIfNeeded(_user);
 
         if (wooBalance[_user] == 0) {
             stakers.remove(_user);

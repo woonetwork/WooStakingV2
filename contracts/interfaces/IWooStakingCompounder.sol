@@ -13,9 +13,5 @@ interface IWooStakingCompounder {
 
     function removeUser(address _user) external returns (bool removed);
 
-    function removeUserIfNeeded(
-        address _user,
-        uint256 wooBalance,
-        uint256 autoCompThreshold
-    ) external returns (bool removed);
+    function removeUserIfNeeded(address _user) external returns (bool removed);
 }

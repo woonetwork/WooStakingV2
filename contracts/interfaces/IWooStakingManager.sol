@@ -55,4 +55,6 @@ interface IWooStakingManager {
     function pendingRewards(
         address _user
     ) external view returns (uint256 mpRewardAmount, address[] memory rewardTokens, uint256[] memory amounts);
+
+    function autoCompThreshold() external view returns (uint256);
 }

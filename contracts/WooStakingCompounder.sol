@@ -94,15 +94,13 @@ contract WooStakingCompounder is IWooStakingCompounder, BaseAdminOperation {
         return true;
     }
 
-    function removeUserIfNeeded(
-        address _user,
-        uint256 wooBalance,
-        uint256 autoCompThreshold
-    ) external onlyAdmin returns (bool removed) {
+    function removeUserIfNeeded(address _user) external onlyAdmin returns (bool removed) {
         if (!users.contains(_user)) {
             return false;
         }
-        if (wooBalance < autoCompThreshold) {
+        uint256 userWooBalance = stakingManager.wooBalance(_user);
+        uint256 autoCompThreshold = stakingManager.autoCompThreshold();
+        if (userWooBalance >= autoCompThreshold) {
             return false;
         }
         users.remove(_user);
