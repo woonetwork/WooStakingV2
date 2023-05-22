@@ -45,7 +45,8 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     event SetRewardPerBlockOnRewarder(uint256 rewardPerBlock);
 
     address public immutable rewardToken; // reward token
-    uint256 public accTokenPerShare; // accumulated reward token per share. number unit is 1e18.
+    uint256 public accTokenPerShare; // accumulated reward token per share.
+    uint256 public immutable tokenPerShareDecimal; // decimal of accTokenPerShare.
     uint256 public rewardPerBlock; // emission rate of reward
     uint256 public lastRewardBlock; // last distribution block
 
@@ -57,6 +58,7 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     mapping(address => uint256) public rewardClaimable; // shadow harvested reward
 
     constructor(address _rewardToken, address _stakingManager) {
+        tokenPerShareDecimal = 1e30;
         rewardToken = _rewardToken;
         stakingManager = IWooStakingManager(_stakingManager);
         lastRewardBlock = block.number;
@@ -73,7 +75,7 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     function pendingReward(address _user) external view returns (uint256 rewardAmount) {
         uint256 _totalWeight = totalWeight();
         uint256 _userWeight = weight(_user);
-        uint256 _userReward = (accTokenPerShare * _userWeight) / 1e18;
+        uint256 _userReward = (accTokenPerShare * _userWeight) / tokenPerShareDecimal;
 
         if (_totalWeight != 0) {
             uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
@@ -116,7 +118,7 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         }
 
         uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
-        accTokenPerShare += (rewards * 1e18) / _totalWeight;
+        accTokenPerShare += (rewards * tokenPerShareDecimal) / _totalWeight;
         lastRewardBlock = block.number;
     }
 
@@ -128,10 +130,10 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         }
 
         uint256 rewards = (block.number - lastRewardBlock) * rewardPerBlock;
-        accTokenPerShare += (rewards * 1e18) / _totalWeight;
+        accTokenPerShare += (rewards * tokenPerShareDecimal) / _totalWeight;
         lastRewardBlock = block.number;
 
-        uint256 accUserReward = (weight(_user) * accTokenPerShare) / 1e18;
+        uint256 accUserReward = (weight(_user) * accTokenPerShare) / tokenPerShareDecimal;
         uint256 newUserReward = accUserReward - rewardDebt[_user];
         rewardClaimable[_user] += newUserReward;
         totalRewardClaimable += newUserReward;
@@ -141,7 +143,7 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     }
 
     function clearRewardToDebt(address _user) public onlyStakingManager {
-        rewardDebt[_user] = (weight(_user) * accTokenPerShare) / 1e18;
+        rewardDebt[_user] = (weight(_user) * accTokenPerShare) / tokenPerShareDecimal;
     }
 
     function totalWeight() public view returns (uint256) {

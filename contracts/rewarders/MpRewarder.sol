@@ -46,7 +46,8 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     event SetRewardRateOnRewarder(uint256 rate);
     event SetBoosterOnRewarder(address indexed booster);
 
-    uint256 public accTokenPerShare; // accumulated reward token per share. number unit is 1e18.
+    uint256 public accTokenPerShare; // accumulated reward token per share.
+    uint256 public immutable tokenPerShareDecimal; //  decimal of accTokenPerShare.
     uint256 public rewardRate; // emission rate of reward. e.g. 10000th, 100: 1%, 5000: 50%
     uint256 public lastRewardTs; // last distribution block
 
@@ -60,6 +61,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     mapping(address => uint256) public rewardClaimable; // shadow harvested reward
 
     constructor(address _stakingManager) {
+        tokenPerShareDecimal = 1e18;
         stakingManager = IWooStakingManager(_stakingManager);
         lastRewardTs = block.timestamp;
         setAdmin(_stakingManager, true);
@@ -82,10 +84,10 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
 
         if (_totalWeight != 0) {
             uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / (10000 * 365 days);
-            _tokenPerShare += (rewards * 1e18) / _totalWeight;
+            _tokenPerShare += (rewards * tokenPerShareDecimal) / _totalWeight;
         }
 
-        uint256 newUserReward = (weight(_user) * _tokenPerShare) / 1e18 - rewardDebt[_user];
+        uint256 newUserReward = (weight(_user) * _tokenPerShare) / tokenPerShareDecimal - rewardDebt[_user];
         return rewardClaimable[_user] + newUserReward;
     }
 
@@ -121,7 +123,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         }
 
         uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / (10000 * 365 days);
-        accTokenPerShare += (rewards * 1e18) / _totalWeight;
+        accTokenPerShare += (rewards * tokenPerShareDecimal) / _totalWeight;
         lastRewardTs = block.timestamp;
     }
 
@@ -133,10 +135,10 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         }
 
         uint256 rewards = ((block.timestamp - lastRewardTs) * _totalWeight * rewardRate) / (10000 * 365 days);
-        accTokenPerShare += (rewards * 1e18) / _totalWeight;
+        accTokenPerShare += (rewards * tokenPerShareDecimal) / _totalWeight;
         lastRewardTs = block.timestamp;
 
-        uint256 accUserReward = (weight(_user) * accTokenPerShare) / 1e18;
+        uint256 accUserReward = (weight(_user) * accTokenPerShare) / tokenPerShareDecimal;
         uint256 newUserReward = accUserReward - rewardDebt[_user];
         rewardClaimable[_user] += newUserReward;
         totalRewardClaimable += newUserReward;
@@ -146,7 +148,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
     }
 
     function clearRewardToDebt(address _user) public onlyStakingManager {
-        rewardDebt[_user] = (weight(_user) * accTokenPerShare) / 1e18;
+        rewardDebt[_user] = (weight(_user) * accTokenPerShare) / tokenPerShareDecimal;
     }
 
     function boostedRewardRate(address _user) external view returns (uint256) {
