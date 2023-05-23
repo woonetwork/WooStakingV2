@@ -147,7 +147,11 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         rewardDebt[_user] = accUserReward;
     }
 
-    function clearRewardToDebt(address _user) public onlyStakingManager {
+    function clearRewardToDebt(address _user) public {
+        require(
+            _msgSender() == address(stakingManager) || _msgSender() == address(booster),
+            "MpRewarder: !stakingManager and !booster"
+        );
         rewardDebt[_user] = (weight(_user) * accTokenPerShare) / tokenPerShareDecimal;
     }
 
