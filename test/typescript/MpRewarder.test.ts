@@ -70,9 +70,7 @@ describe("MpRewarder tests", () => {
         booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address])) as RewardBooster;
         await mpRewarder.setBooster(booster.address);
         await stakingManager.setMPRewarder(mpRewarder.address);
-    });
 
-    beforeEach(async () => {
         [user, user1, user2] = await ethers.getSigners();
         await stakingManager.stakeWoo(user.address, utils.parseEther("5"));
         await stakingManager.stakeWoo(user1.address, utils.parseEther("10"));
@@ -114,6 +112,34 @@ describe("MpRewarder tests", () => {
 
         await mpRewarder["claim(address)"](user.address);
         expect(await stakingManager.mpBalance(user.address)).to.be.gte(userPending);
+    });
+
+    it("Booster tests", async() => {
+        await compounder.mock.contains.returns(false);
+        await mpRewarder.setRewardRate(31536000 * 100);   // 1% per second
+
+        const startBlockTimestamp = Number(await mpRewarder.lastRewardTs());
+        const rewardRate = await mpRewarder.rewardRate();
+        const weight1 = await mpRewarder.weight(user1.address);
+
+        await mine(10);
+
+        let pending1 = await mpRewarder.pendingReward(user1.address);
+        expect(pending1).to.be.gt(0);
+        await booster.setUserRatios([user1.address], [true], [false]);
+        const weight2 = await mpRewarder.weight(user1.address);
+        let pending2 = await mpRewarder.pendingReward(user1.address);
+
+        await booster.setUserRatios([user1.address], [false], [false]);
+        const weight3 = await mpRewarder.weight(user1.address);
+        let pending3 = await mpRewarder.pendingReward(user1.address);
+        // console.log("weight1: %s weight2: %s weight3: %s",
+        //     weight1, weight2, weight3);
+        // console.log("pending1: %s pending2: %s pending3: %s",
+        //     pending1, pending2, pending3);
+        expect(pending3).to.be.gt(0);
+        expect(weight3).to.be.eq(weight1);
+        expect(weight3).to.be.lt(weight2);
     });
 
     async function _logUserBals() {

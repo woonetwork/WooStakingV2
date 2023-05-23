@@ -76,6 +76,7 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
                         (compounder.contains(_user) ? autoCompoundBR : base)) /
                     base /
                     base;
+                mpRewarder.clearRewardToDebt(_user);
             }
         }
     }
