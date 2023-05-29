@@ -73,7 +73,6 @@ contract WooStakingProxy is IWooStakingProxy, NonblockingLzApp, BaseAdminOperati
         want = IERC20(_want);
         isEmergency = false;
 
-        // TODO: adjust the gas
         actionToDstGas[ACTION_STAKE] = 600000;
         actionToDstGas[ACTION_UNSTAKE] = 600000;
         actionToDstGas[ACTION_SET_AUTO_COMPOUND] = 600000;

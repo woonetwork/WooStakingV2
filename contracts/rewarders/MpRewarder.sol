@@ -147,6 +147,7 @@ contract MpRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
         rewardDebt[_user] = accUserReward;
     }
 
+    // NOTE: only allowed for stakingManager and booster
     function clearRewardToDebt(address _user) public {
         require(
             _msgSender() == address(stakingManager) || _msgSender() == address(booster),
