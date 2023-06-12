@@ -87,6 +87,9 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         wooBalance[_user] += _amount;
         wooTotalBalance += _amount;
 
+        // NOTE: wooBalance and mpBalance updates can change user weight for SimpleRewarder.
+        // wooBalance updates can change user weight for MpRewarder.
+        // So we need do this operation.
         _clearRewardsToDebt(_user);
 
         if (_amount > 0) {
@@ -114,6 +117,9 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
         mpBalance[_user] -= burnAmount;
         mpTotalBalance -= burnAmount;
 
+        // NOTE: wooBalance and mpBalance updates can change user weight for SimpleRewarder.
+        // wooBalance updates can change user weight for MpRewarder.
+        // So we need do this operation.
         _clearRewardsToDebt(_user);
 
         compounder.removeUserIfThresholdFail(_user);
@@ -259,6 +265,7 @@ contract WooStakingManager is IWooStakingManager, BaseAdminOperation, Reentrancy
 
         mpRewarder.claim(_user); // claim MP and restaking to this managaer
 
+        // NOTE: mpBalance update changes user weight for SimpleRewarder.
         unchecked {
             for (i = 0; i < len; ++i) {
                 IRewarder(rewarders.at(i)).clearRewardToDebt(_user);

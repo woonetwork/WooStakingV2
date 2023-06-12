@@ -76,6 +76,8 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
                         (compounder.contains(_user) ? autoCompoundBR : base)) /
                     base /
                     base;
+
+                // NOTE: boostRatio update changes user weight for MpRewarder.
                 mpRewarder.clearRewardToDebt(_user);
             }
         }

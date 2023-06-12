@@ -101,6 +101,10 @@ contract SimpleRewarder is IRewarder, BaseAdminOperation, ReentrancyGuard {
 
     function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
         updateRewardForUser(_user);
+
+        // NOTE: updateRewardForUser contains clearRewardToDebt operation.
+        // Considering claim operation doesn't modify user wooBalance and mpBalance,
+        // we don't need clearRewardToDebt again.
         rewardAmount = rewardClaimable[_user];
         rewardClaimable[_user] = 0;
         totalRewardClaimable -= rewardAmount;
