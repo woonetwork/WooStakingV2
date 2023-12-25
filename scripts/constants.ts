@@ -28,7 +28,8 @@ export const depAddressList = {
   "woo": "0xcAFcD85D8ca7Ad1e1C6F82F651fA15E33AEfD07b",
   "usdc": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
   "weth": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-  "wooPP": "0xeFF23B4bE1091b53205E35f3AfCD9C7182bf3062"
+  "wooPP": "0xeFF23B4bE1091b53205E35f3AfCD9C7182bf3062",
+  "arb": "0x912CE59144191C1204E64559FE8253a0e49E6548"
 }
 
 // LayerZero chain ids.
@@ -56,7 +57,8 @@ export const lz_chainid = lz_arbitrum_chainid;
 export const lz_endpoint = lz_arbitrum_endpoint;
 
 export const user1 = "0xA113d3B08df49D442fA1c0b47A82Ad95aD19c0Fb";
-export const user2 = "0xea02DCC6fe3eC1F2a433fF8718677556a3bb3618";
+// export const user2 = "0xea02DCC6fe3eC1F2a433fF8718677556a3bb3618";
+export const user2 = "0x47fc45CEBFc47Cef07a09A98405B6EBAeF00ef75";
 export const user3 = "0x7C8A5d20b22Ce9b369C043A3E0091b5575B732d9";
 
 export const stakingContractsFile = "./staking_contracts.json";

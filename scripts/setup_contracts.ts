@@ -23,8 +23,9 @@ async function getContracts() {
     "MpRewarder", addressList["MpRewarder"]);
   const usdcRewarder = await ethers.getContractAt(
       "SimpleRewarder", addressList["UsdcRewarder"]);
-  const wethRewarder = await ethers.getContractAt(
-    "SimpleRewarder", addressList["WethRewarder"]);
+  const arbRewarder = await ethers.getContractAt(
+    "SimpleRewarder", addressList["ArbRewarder"]);
+
   const booster = await ethers.getContractAt(
     "RewardBooster", addressList["RewardBooster"]);
   const wooStakingCompounder = await ethers.getContractAt(
@@ -39,7 +40,7 @@ async function getContracts() {
     stakingManager,
     mpRewarder,
     usdcRewarder,
-    wethRewarder,
+    arbRewarder,
     booster,
     wooStakingCompounder,
     wooStakingController,
@@ -53,7 +54,7 @@ async function setUserAdmin(userAddress: string) {
     stakingManager,
     mpRewarder,
     usdcRewarder,
-    wethRewarder,
+    arbRewarder,
     booster,
     wooStakingCompounder,
     wooStakingController,
@@ -73,9 +74,9 @@ async function setUserAdmin(userAddress: string) {
   await sleep(constants.sleepSeconds);
   console.log("usdcRewarder setAdmin: %s", userAddress);
 
-  await wethRewarder.setAdmin(userAddress, true);
+  await arbRewarder.setAdmin(userAddress, true);
   await sleep(constants.sleepSeconds);
-  console.log("wethRewarder setAdmin: %s", userAddress);
+  console.log("arbRewarder setAdmin: %s", userAddress);
 
   await booster.setAdmin(userAddress, true);
   await sleep(constants.sleepSeconds);
@@ -103,7 +104,7 @@ async function setupContracts() {
     stakingManager,
     mpRewarder,
     usdcRewarder,
-    wethRewarder,
+    arbRewarder,
     booster,
     wooStakingCompounder,
     wooStakingController,
@@ -144,9 +145,9 @@ async function setupContracts() {
   await sleep(constants.sleepSeconds);
   console.log("add usdc rewarder: %s", usdcRewarder.address);
 
-  await stakingManager.addRewarder(wethRewarder.address);
+  await stakingManager.addRewarder(arbRewarder.address);
   await sleep(constants.sleepSeconds);
-  console.log("add weth rewarder: %s", wethRewarder.address);
+  console.log("add arb rewarder: %s", arbRewarder.address);
 
   await stakingManager.setAdmin(wooStakingController.address, true);
   await sleep(constants.sleepSeconds);
@@ -183,7 +184,7 @@ async function setupRewarders() {
     stakingManager,
     mpRewarder,
     usdcRewarder,
-    wethRewarder,
+    arbRewarder,
     booster,
     wooStakingCompounder,
     wooStakingController,
@@ -196,10 +197,10 @@ async function setupRewarders() {
   await sleep(constants.sleepSeconds);
   console.log("usdcRewarder setRewardPerBlock: %s", rewardPerBlock);
 
-  rewardPerBlock = 1273148000;
-  await wethRewarder.setRewardPerBlock(rewardPerBlock);
+  rewardPerBlock = 1;
+  await arbRewarder.setRewardPerBlock(rewardPerBlock);
   await sleep(constants.sleepSeconds);
-  console.log("wethRewarder setRewardPerBlock: %s", rewardPerBlock);
+  console.log("arbRewarder setRewardPerBlock: %s", rewardPerBlock);
 
   let rewardRate = 87600000;
   await mpRewarder.setRewardRate(rewardRate);
@@ -213,7 +214,7 @@ async function tempSetUserRatios() {
     stakingManager,
     mpRewarder,
     usdcRewarder,
-    wethRewarder,
+    arbRewarder,
     booster,
     wooStakingCompounder,
     wooStakingController,

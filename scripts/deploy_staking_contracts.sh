@@ -8,8 +8,8 @@
 # npx hardhat run --network fantom_mainnet scripts/deploy_contracts.ts
 # npx hardhat run --network fantom_mainnet scripts/setup_contracts.ts
 
-# npx hardhat run --network arbitrum_mainnet scripts/deploy_contracts.ts
-# npx hardhat run --network arbitrum_mainnet scripts/setup_contracts.ts
+npx hardhat run --network arbitrum_mainnet scripts/deploy_contracts.ts
+npx hardhat run --network arbitrum_mainnet scripts/setup_contracts.ts
 
 
 # NOTE: deploy proxy contracts
@@ -21,6 +21,6 @@
 
 
 # NOTE: controller add proxy contracts
-npx hardhat run --network arbitrum_mainnet scripts/deploy_proxy_contracts.ts
+# npx hardhat run --network arbitrum_mainnet scripts/deploy_proxy_contracts.ts
 
 

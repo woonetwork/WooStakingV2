@@ -70,12 +70,19 @@ async function deployContracts() {
   await sleep(constants.sleepSeconds);
   await verify(usdcRewarder, args);
 
-  args = [constants.depAddressList["weth"], stakingManager];
-  const wethRewarder = await deploy(args, contractName);
-  console.log(`weth rewarder deployed to: ${wethRewarder}`);
-  contracts.set("WethRewarder", wethRewarder);
+  // args = [constants.depAddressList["weth"], stakingManager];
+  // const wethRewarder = await deploy(args, contractName);
+  // console.log(`weth rewarder deployed to: ${wethRewarder}`);
+  // contracts.set("WethRewarder", wethRewarder);
+  // await sleep(constants.sleepSeconds);
+  // await verify(wethRewarder, args);
+
+  args = [constants.depAddressList["arb"], stakingManager];
+  const arbRewarder = await deploy(args, contractName);
+  console.log(`arb rewarder deployed to: ${arbRewarder}`);
+  contracts.set("ArbRewarder", arbRewarder);
   await sleep(constants.sleepSeconds);
-  await verify(wethRewarder, args);
+  await verify(arbRewarder, args);
 
   contractName = "WooStakingCompounder";
   args = [stakingManager];
