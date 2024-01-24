@@ -45,6 +45,7 @@ import RewardBoosterArtifact from "../../artifacts/contracts/rewarders/RewardBoo
 import WooStakingCompounderArtifact from "../../artifacts/contracts/WooStakingCompounder.sol/WooStakingCompounder.json";
 import IWooPPV2Artifact from "../../artifacts/contracts/interfaces/IWooPPV2.sol/IWooPPV2.json";
 
+const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
 describe("WooStakingLocal tests", () => {
 
@@ -82,7 +83,7 @@ describe("WooStakingLocal tests", () => {
         await stakingManager.setCompounder(compounder.address);
 
         mpRewarder = (await deployContract(owner, MpRewarderArtifact, [stakingManager.address])) as MpRewarder;
-        booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address])) as RewardBooster;
+        booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address, ZERO_ADDR])) as RewardBooster;
         await mpRewarder.setBooster(booster.address);
         await stakingManager.setMPRewarder(mpRewarder.address);
     });
