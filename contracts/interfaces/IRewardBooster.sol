@@ -7,6 +7,7 @@ import "./IWooStakingManager.sol";
 interface IRewardBooster {
     event SetMPRewarder(address indexed rewarder);
     event SetAutoCompounder(address indexed compounder);
+    event SetNftBooster(address indexed nftBooster);
 
     event SetVolumeBR(uint256 newBr);
     event SetTvlBR(uint256 newBr);

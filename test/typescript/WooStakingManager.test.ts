@@ -36,7 +36,7 @@ import { deployContract, deployMockContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 const { mine, time, mineUpTo } = require("@nomicfoundation/hardhat-network-helpers");
 
-import { MpRewarder, RewardBooster, SimpleRewarder, TestWooPP, WooStakingCompounder, WooStakingManager } from "../../typechain";
+import { MpRewarder, RewardBooster, NftBooster, SimpleRewarder, TestWooPP, WooStakingCompounder, WooStakingManager } from "../../typechain";
 import SimpleRewarderArtifact from "../../artifacts/contracts/rewarders/SimpleRewarder.sol/SimpleRewarder.json";
 import MpRewarderArtifact from "../../artifacts/contracts/rewarders/MpRewarder.sol/MpRewarder.json";
 import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManager.sol/WooStakingManager.json";
@@ -44,16 +44,19 @@ import TestTokenArtifact from "../../artifacts/contracts/test/TestToken.sol/Test
 import WooStakingLocalArtifact from "../../artifacts/contracts/WooStakingLocal.sol/WooStakingLocal.json";
 import IWooPPV2Artifact from "../../artifacts/contracts/interfaces/IWooPPV2.sol/IWooPPV2.json";
 import RewardBoosterArtifact from "../../artifacts/contracts/rewarders/RewardBooster.sol/RewardBooster.json";
+import NftBoosterArtifact from "../../artifacts/contracts/rewarders/NftBooster.sol/NftBooster.json";
 import TestWooPPArtifact from "../../artifacts/contracts/test/TestWooPP.sol/TestWooPP.json";
 import WooStakingCompounderArtifact from "../../artifacts/contracts/WooStakingCompounder.sol/WooStakingCompounder.json";
 import IWooStakingCompounder from "../../artifacts/contracts/interfaces/IWooStakingCompounder.sol/IWooStakingCompounder.json";
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
+const NFT_ADDR = '0x1110000000000000000000000000000000000111'
 
 describe("WooStakingManager tests", () => {
 
     let owner: SignerWithAddress;
 
+    let nftBooster: NftBooster;
     let booster: RewardBooster;
     let mpRewarder: MpRewarder;
     let rewarder1: SimpleRewarder;
@@ -120,7 +123,9 @@ describe("WooStakingManager tests", () => {
         mpRewarder = (await deployContract(owner, MpRewarderArtifact, [stakingManager.address])) as MpRewarder;
         await mpRewarder.setAdmin(stakingManager.address, true);
 
-        booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address])) as RewardBooster;
+        nftBooster = (await deployContract(owner, NftBoosterArtifact, [NFT_ADDR])) as NftBooster;
+
+        booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address, nftBooster.address])) as RewardBooster;
         await mpRewarder.setBooster(booster.address);
 
         await stakingManager.setMPRewarder(mpRewarder.address);

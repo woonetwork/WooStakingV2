@@ -41,12 +41,16 @@ import {BaseAdminOperation} from "../BaseAdminOperation.sol";
 import {TransferHelper} from "../util/TransferHelper.sol";
 import {IWooStakingCompounder} from "../interfaces/IWooStakingCompounder.sol";
 
+import {NftBooster} from "./NftBooster.sol";
+
 contract RewardBooster is IRewardBooster, BaseAdminOperation {
     // BR = Boost Ratio,
     // In unit 10000th: 100: 1%, 5000: 50%
     uint256 public volumeBR;
     uint256 public tvlBR;
-    uint256 public autoCompoundBR; // only applied to controller chain
+
+    // only applied to controller chain
+    uint256 public autoCompoundBR;
 
     mapping(address => uint256) public boostRatio;
 
@@ -56,13 +60,16 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
 
     IWooStakingCompounder public compounder;
 
-    constructor(address _mpRewarder, address _compounder) {
+    NftBooster public nftBooster;
+
+    constructor(address _mpRewarder, address _compounder, address _nftBooster) {
         base = 10000;
         volumeBR = 13000; // 130%
         tvlBR = 13000; // 130%
         autoCompoundBR = 15000; // 150%
         mpRewarder = IRewarder(_mpRewarder);
         compounder = IWooStakingCompounder(_compounder);
+        nftBooster = NftBooster(_nftBooster);
     }
 
     function setUserRatios(address[] memory users, bool[] memory volFlags, bool[] memory tvlFlags) external onlyAdmin {
@@ -73,9 +80,11 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
                 boostRatio[_user] =
                     ((volFlags[i] ? volumeBR : base) *
                         (tvlFlags[i] ? tvlBR : base) *
+                        nftBooster.boostRatio(_user) *
                         (compounder.contains(_user) ? autoCompoundBR : base)) /
                     base /
-                    base;
+                    base /
+                    nftBooster.base();
                 mpRewarder.clearRewardToDebt(_user);
             }
         }
@@ -89,6 +98,11 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
     function setAutoCompounder(address _compounder) external onlyAdmin {
         compounder = IWooStakingCompounder(_compounder);
         emit SetAutoCompounder(_compounder);
+    }
+
+    function setNftBooster(address _nftBooster) external onlyAdmin {
+        nftBooster = NftBooster(_nftBooster);
+        emit SetNftBooster(_nftBooster);
     }
 
     function setVolumeBR(uint256 _br) external onlyAdmin {
