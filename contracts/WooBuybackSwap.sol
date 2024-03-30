@@ -41,7 +41,7 @@ import {ILBRouter} from "./interfaces/ILBRouter.sol";
 import {TransferHelper} from "./util/TransferHelper.sol";
 
 contract WooBuybackSwap is BaseAdminOperation {
-    event SetLBRouterOnBuyBack(address indexed unirouter);
+    event SetLBRouterOnBuyBack(address indexed lbrouter);
 
     /* ----- Constant variables ----- */
 
@@ -52,12 +52,12 @@ contract WooBuybackSwap is BaseAdminOperation {
     address constant ARB_ADDR = 0x912CE59144191C1204E64559FE8253a0e49E6548;
 
     /* ----- State variables ----- */
-    address public unirouter;
+    address public lbrouter;
     mapping(address => ILBRouter.Path) private routerPath;
 
-    constructor(address _unirouter) {
+    constructor(address _lbrouter) {
         // arb contract: https://arbiscan.io/address/0xb4315e873dbcf96ffd0acd8ea43f689d8c20fb30#code
-        unirouter = _unirouter;
+        lbrouter = _lbrouter;
 
         _initRouterPath();
     }
@@ -94,9 +94,9 @@ contract WooBuybackSwap is BaseAdminOperation {
         routerPath[ARB_ADDR] = arbPath;
     }
 
-    function setLBRouter(address _unirouter) external onlyAdmin {
-        unirouter = _unirouter;
-        emit SetLBRouterOnBuyBack(_unirouter);
+    function setLBRouter(address _lbrouter) external onlyAdmin {
+        lbrouter = _lbrouter;
+        emit SetLBRouterOnBuyBack(_lbrouter);
     }
 
     function setRouterPath(address fromToken, ILBRouter.Path calldata path) external onlyAdmin {
@@ -119,8 +119,8 @@ contract WooBuybackSwap is BaseAdminOperation {
         require(toToken == WOO_ADDR, "Only support swap to woo!");
         require(minToAmount >= 0, "minToAmount should be equal or greater than 0!");
 
-        TransferHelper.safeApprove(fromToken, unirouter, fromAmount);
-        realToAmount = ILBRouter(unirouter).swapExactTokensForTokens(
+        TransferHelper.safeApprove(fromToken, lbrouter, fromAmount);
+        realToAmount = ILBRouter(lbrouter).swapExactTokensForTokens(
             fromAmount,
             minToAmount,
             routerPath[fromToken],
