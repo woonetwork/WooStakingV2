@@ -34,27 +34,35 @@ pragma solidity ^0.8.4;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 import {ILBRouter} from "./interfaces/ILBRouter.sol";
 import {TransferHelper} from "./util/TransferHelper.sol";
 
 contract WooBuybackSwap is BaseAdminOperation {
-    event SetUniRouterOnBuyBack(address indexed unirouter);
-    using SafeERC20 for IERC20;
+    event SetLBRouterOnBuyBack(address indexed unirouter);
 
+    /* ----- Constant variables ----- */
+
+    // Erc20 address
+    address constant USDC_ADDR = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+    address constant WETH_ADDR = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address constant WOO_ADDR = 0xcAFcD85D8ca7Ad1e1C6F82F651fA15E33AEfD07b;
+    address constant ARB_ADDR = 0x912CE59144191C1204E64559FE8253a0e49E6548;
+
+    /* ----- State variables ----- */
     address public unirouter;
     mapping(address => ILBRouter.Path) private routerPath;
 
     constructor(address _unirouter) {
+        // arb contract: https://arbiscan.io/address/0xb4315e873dbcf96ffd0acd8ea43f689d8c20fb30#code
         unirouter = _unirouter;
-        // usdc = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831
-        // weth = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
-        // woo = 0xcAFcD85D8ca7Ad1e1C6F82F651fA15E33AEfD07b
-        // arb = 0x912CE59144191C1204E64559FE8253a0e49E6548
 
+        _initRouterPath();
+    }
+
+    function _initRouterPath() internal {
         // usdc
         ILBRouter.Path memory usdcPath;
 
@@ -65,30 +73,30 @@ contract WooBuybackSwap is BaseAdminOperation {
         versions[0] = ILBRouter.Version.V2_1;
         versions[1] = ILBRouter.Version.V2_1;
         IERC20[] memory tokenPath = new IERC20[](3);
-        tokenPath[0] = IERC20(0xaf88d065e77c8cC2239327C5EDb3A432268e5831);
-        tokenPath[1] = IERC20(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
-        tokenPath[2] = IERC20(0xcAFcD85D8ca7Ad1e1C6F82F651fA15E33AEfD07b);
+        tokenPath[0] = IERC20(USDC_ADDR);
+        tokenPath[1] = IERC20(WETH_ADDR);
+        tokenPath[2] = IERC20(WOO_ADDR);
 
         usdcPath.pairBinSteps = pairBinSteps;
         usdcPath.versions = versions;
         usdcPath.tokenPath = tokenPath;
-        routerPath[address(0xaf88d065e77c8cC2239327C5EDb3A432268e5831)] = usdcPath;
+        routerPath[USDC_ADDR] = usdcPath;
 
         // arb
         ILBRouter.Path memory arbPath;
-        tokenPath[0] = IERC20(0x912CE59144191C1204E64559FE8253a0e49E6548);
-        tokenPath[1] = IERC20(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
-        tokenPath[2] = IERC20(0xcAFcD85D8ca7Ad1e1C6F82F651fA15E33AEfD07b);
+        tokenPath[0] = IERC20(ARB_ADDR);
+        tokenPath[1] = IERC20(WETH_ADDR);
+        tokenPath[2] = IERC20(WOO_ADDR);
 
         arbPath.pairBinSteps = pairBinSteps;
         arbPath.versions = versions;
         arbPath.tokenPath = tokenPath;
-        routerPath[address(0x912CE59144191C1204E64559FE8253a0e49E6548)] = arbPath;
+        routerPath[ARB_ADDR] = arbPath;
     }
 
-    function setUniRouter(address _unirouter) external onlyAdmin {
+    function setLBRouter(address _unirouter) external onlyAdmin {
         unirouter = _unirouter;
-        emit SetUniRouterOnBuyBack(_unirouter);
+        emit SetLBRouterOnBuyBack(_unirouter);
     }
 
     function setRouterPath(address fromToken, ILBRouter.Path calldata path) external onlyAdmin {
@@ -108,7 +116,7 @@ contract WooBuybackSwap is BaseAdminOperation {
     ) external returns (uint256 realToAmount) {
         require(IERC20(fromToken).balanceOf(address(this)) >= fromAmount);
         require(routerPath[fromToken].tokenPath.length > 0, "Only support swap usdc or arb!");
-        require(toToken == address(0xcAFcD85D8ca7Ad1e1C6F82F651fA15E33AEfD07b), "Only support swap to woo!");
+        require(toToken == WOO_ADDR, "Only support swap to woo!");
         require(minToAmount >= 0, "minToAmount should be equal or greater than 0!");
 
         TransferHelper.safeApprove(fromToken, unirouter, fromAmount);
