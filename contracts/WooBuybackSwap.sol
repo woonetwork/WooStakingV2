@@ -91,6 +91,11 @@ contract WooBuybackSwap is BaseAdminOperation {
         routerPath[USDC_ADDR] = usdcPath;
 
         ILBRouter.Path memory arbPath;
+        pairBinSteps[0] = 0;
+        pairBinSteps[1] = 25;
+        versions[0] = ILBRouter.Version.V1;
+        versions[1] = ILBRouter.Version.V2_1;
+
         tokenPath[0] = IERC20(ARB_ADDR);
         tokenPath[1] = IERC20(WETH_ADDR);
         tokenPath[2] = IERC20(WOO_ADDR);
@@ -115,8 +120,20 @@ contract WooBuybackSwap is BaseAdminOperation {
         emit SetLBRouterOnBuyBack(_lbrouter);
     }
 
-    function setRouterPath(address fromToken, ILBRouter.Path calldata path) external onlyAdmin {
-        require(path.tokenPath.length > 0, "token swap path should be valid!");
+    function setRouterPath(
+        address fromToken,
+        uint256[] calldata pairBinSteps,
+        ILBRouter.Version[] calldata versions,
+        IERC20[] calldata tokenPath
+    ) external onlyAdmin {
+        require(pairBinSteps.length > 0, "pair bin steps should be valid!");
+        require(versions.length > 0, "versions should be valid!");
+        require(tokenPath.length > 0, "token swap path should be valid!");
+        ILBRouter.Path memory path;
+        path.pairBinSteps = pairBinSteps;
+        path.versions = versions;
+        path.tokenPath = tokenPath;
+
         routerPath[fromToken] = path;
     }
 
@@ -130,7 +147,7 @@ contract WooBuybackSwap is BaseAdminOperation {
         address to,
         address /*rebateTo*/
     ) external returns (uint256 realToAmount) {
-        require(IERC20(fromToken).balanceOf(address(this)) >= fromAmount);
+        require(IERC20(fromToken).balanceOf(address(this)) >= fromAmount, "Token balance insufficient!");
         require(routerPath[fromToken].tokenPath.length > 0, "Only support swap usdc or arb!");
         require(toToken == WOO_ADDR, "Only support swap to woo!");
         require(minToAmount >= 0, "minToAmount should be equal or greater than 0!");
