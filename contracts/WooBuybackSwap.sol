@@ -90,6 +90,16 @@ contract WooBuybackSwap is BaseAdminOperation {
         usdcPath.tokenPath = tokenPath;
         routerPath[USDC_ADDR] = usdcPath;
 
+        ILBRouter.Path memory usdcePath;
+        tokenPath[0] = IERC20(USDCE_ADDR);
+        tokenPath[1] = IERC20(WETH_ADDR);
+        tokenPath[2] = IERC20(WOO_ADDR);
+        
+        usdcePath.pairBinSteps = pairBinSteps;
+        usdcePath.versions = versions;
+        usdcePath.tokenPath = tokenPath;
+        routerPath[USDCE_ADDR] = usdcePath;
+
         ILBRouter.Path memory arbPath;
         pairBinSteps[0] = 0;
         pairBinSteps[1] = 25;
