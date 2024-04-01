@@ -60,12 +60,12 @@ contract WooBuybackSwap is BaseAdminOperation {
 
     uint256 public slippage; // 1 in 10000th: e.g. 100 = 1%; 50 = 0.5%, 10 = 0.1%
     uint256 public constant SLIP_BASE = 10000;
-    uint256 public constant ORACLE_TTL = 60 minutes;
+    uint256 public oracleTTL = 15 minutes;
 
     constructor(address _lbrouter) {
         // arb contract: https://arbiscan.io/address/0xb4315e873dbcf96ffd0acd8ea43f689d8c20fb30#code
         lbrouter = _lbrouter;
-        slippage = 20;
+        slippage = 50;
 
         _initRouterPath();
         _initOracles();
@@ -150,6 +150,10 @@ contract WooBuybackSwap is BaseAdminOperation {
         slippage = _slippage;
     }
 
+    function setOracleTTL(uint256 _oracleTTL) external onlyAdmin {
+        oracleTTL = _oracleTTL;
+    }
+
     function setOracle(address token, address oracle) external onlyAdmin {
         oracles[token] = oracle;
     }
@@ -188,12 +192,15 @@ contract WooBuybackSwap is BaseAdminOperation {
 
         (, int256 rawBaseRefPrice, , uint256 baseUpdatedAt, ) = AggregatorV3Interface(baseOracle).latestRoundData();
         (, int256 rawQuoteRefPrice, , uint256 quoteUpdatedAt, ) = AggregatorV3Interface(quoteOracle).latestRoundData();
-        require(baseUpdatedAt >= block.timestamp - ORACLE_TTL, "!baseUpdatedAt");
-        require(quoteUpdatedAt >= block.timestamp - ORACLE_TTL, "!quoteUpdatedAt");
+
+        require(baseUpdatedAt >= block.timestamp - oracleTTL, "!baseUpdatedAt");
+        if (_fromToken != USDC_ADDR && _fromToken != USDCE_ADDR) {
+            require(quoteUpdatedAt >= block.timestamp - oracleTTL, "!quoteUpdatedAt");
+        }
+
         uint256 baseRefPrice = uint256(rawBaseRefPrice);
         uint256 quoteRefPrice = uint256(rawQuoteRefPrice);
 
-        uint256 slippageRemain = SLIP_BASE - slippage;
-        return (((_fromAmount * quoteRefPrice) / baseRefPrice) * slippageRemain) / SLIP_BASE;
+        return (((_fromAmount * quoteRefPrice) / baseRefPrice) * (SLIP_BASE - slippage)) / SLIP_BASE;
     }
 }
