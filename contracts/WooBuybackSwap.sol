@@ -65,7 +65,7 @@ contract WooBuybackSwap is BaseAdminOperation {
     constructor(address _lbrouter) {
         // arb contract: https://arbiscan.io/address/0xb4315e873dbcf96ffd0acd8ea43f689d8c20fb30#code
         lbrouter = _lbrouter;
-        slippage = 50;
+        slippage = 20;
 
         _initRouterPath();
         _initOracles();
@@ -101,10 +101,8 @@ contract WooBuybackSwap is BaseAdminOperation {
         routerPath[USDCE_ADDR] = usdcePath;
 
         ILBRouter.Path memory arbPath;
-        pairBinSteps[0] = 0;
+        pairBinSteps[0] = 10;
         pairBinSteps[1] = 25;
-        versions[0] = ILBRouter.Version.V1;
-        versions[1] = ILBRouter.Version.V2_1;
 
         tokenPath[0] = IERC20(ARB_ADDR);
         tokenPath[1] = IERC20(WETH_ADDR);
