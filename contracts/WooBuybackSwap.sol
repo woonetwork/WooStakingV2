@@ -147,6 +147,15 @@ contract WooBuybackSwap is BaseAdminOperation {
         routerPath[fromToken] = path;
     }
 
+    function setSlippage(uint256 _slippage) external onlyAdmin {
+        require(_slippage >= 0 && _slippage <= SLIP_BASE, "slippage>=0 and <=10000");
+        slippage = _slippage;
+    }
+
+    function setOracle(address token, address oracle) external onlyAdmin {
+        oracles[token] = oracle;
+    }
+
     // fromToken = $usdc or $arb
     // toToken = woo
     function swap(
@@ -186,6 +195,7 @@ contract WooBuybackSwap is BaseAdminOperation {
         uint256 baseRefPrice = uint256(rawBaseRefPrice);
         uint256 quoteRefPrice = uint256(rawQuoteRefPrice);
 
-        return (((_fromAmount * quoteRefPrice) / baseRefPrice) * slippage) / SLIP_BASE;
+        uint256 slippageRemain = SLIP_BASE - slippage;
+        return (((_fromAmount * quoteRefPrice) / baseRefPrice) * slippageRemain) / SLIP_BASE;
     }
 }
