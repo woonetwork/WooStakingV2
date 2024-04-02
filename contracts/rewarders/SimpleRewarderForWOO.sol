@@ -95,19 +95,18 @@ contract SimpleRewarderForWOO is IRewarder, BaseAdminOperation, ReentrancyGuard 
         rewardAmount = _claim(_user, _user);
     }
 
-    // NOTE: claiming to other address only works for compouding rewards
-    function claim(address _user, address _to) external onlyStakingManager returns (uint256 rewardAmount) {
-        rewardAmount = _claim(_user, _to);
+    /// @dev ignore the parameter `_to` and transfer to the stakingManager only.
+    function claim(address _user, address /* _to */) external onlyStakingManager returns (uint256 rewardAmount) {
+        rewardAmount = _claim(_user, address(stakingManager));
     }
 
-    /// @dev ignore the parameter `_to` and transfer to the stakingManager only.
-    function _claim(address _user, address /* _to */) internal returns (uint256 rewardAmount) {
+    function _claim(address _user, address _to) internal returns (uint256 rewardAmount) {
         updateRewardForUser(_user);
         rewardAmount = rewardClaimable[_user];
         rewardClaimable[_user] = 0;
         totalRewardClaimable -= rewardAmount;
-        TransferHelper.safeTransfer(rewardToken, address(stakingManager), rewardAmount);
-        emit ClaimOnRewarder(_user, address(stakingManager), rewardAmount);
+        TransferHelper.safeTransfer(rewardToken, _to, rewardAmount);
+        emit ClaimOnRewarder(_user, _to, rewardAmount);
     }
 
     // clear and settle the reward
