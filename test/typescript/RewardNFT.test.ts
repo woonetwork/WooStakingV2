@@ -29,16 +29,16 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import { expect, use } from "chai";
-import { Contract, utils } from 'ethers'
+import { expect } from "chai";
+import { Contract } from 'ethers'
 import { ethers } from "hardhat";
-import { deployContract, deployMockContract } from "ethereum-waffle";
+import { deployContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-import { RewardNFT, NftBooster, RewardCampaign } from "../../typechain";
+import { RewardNFT, NftBooster, RewardCampaignManager } from "../../typechain";
 import RewardNFTArtifact from "../../artifacts/contracts/RewardNFT.sol/RewardNFT.json";
 import NftBoosterArtifact from "../../artifacts/contracts/rewarders/NftBooster.sol/NftBooster.json";
-import RewardCampaignArtifact from "../../artifacts/contracts/RewardCampaign.sol/RewardCampaign.json";
+import RewardCampaignManagerArtifact from "../../artifacts/contracts/RewardCampaignManager.sol/RewardCampaignManager.json";
 
 
 
@@ -48,13 +48,14 @@ describe("RewardNFT tests", () => {
 
     let rewardNFT: RewardNFT;
     let nftBooster: NftBooster;
-    let rewardCampaign: RewardCampaign;
+    let campaignManager: RewardCampaignManager;
     let user: SignerWithAddress;
     let user1: SignerWithAddress;
     let user2: SignerWithAddress;
     let user3: SignerWithAddress;
 
     let usdcToken: Contract;
+    let campaignId = 1;
 
     beforeEach(async () => {
         const signers = await ethers.getSigners();
@@ -65,14 +66,16 @@ describe("RewardNFT tests", () => {
         user3 = signers[4];
 
         rewardNFT = await deployContract(owner, RewardNFTArtifact, []) as RewardNFT;
-        rewardCampaign = await deployContract(owner, RewardCampaignArtifact, [rewardNFT.address]) as RewardCampaign;
-        await rewardNFT.addCampaign(rewardCampaign.address);
+        campaignManager = await deployContract(owner, RewardCampaignManagerArtifact,
+            [rewardNFT.address]) as RewardCampaignManager;
+        await campaignManager.addCampaign(campaignId);
+        await rewardNFT.setCampaignManager(campaignManager.address);
         nftBooster = (await deployContract(owner, NftBoosterArtifact, [rewardNFT.address])) as NftBooster;
     });
 
     it("NftBooster Tests", async() => {
-        await rewardCampaign.addUsers(0, [owner.address]);
-        await rewardCampaign["claim(address)"](owner.address);
+        await campaignManager.addUsers(1, 0, [owner.address]);
+        await campaignManager["claim(uint256,address)"](campaignId, owner.address);
 
         await rewardNFT.setApprovalForAll(nftBooster.address, true);
         await nftBooster.stakeNft(0);
@@ -93,30 +96,30 @@ describe("RewardNFT tests", () => {
 
     it("Claim Tests", async() => {
         let balance;
-        await rewardCampaign.addUsers(0, [user2.address, user1.address]);
+        await campaignManager.addUsers(campaignId, 0, [user2.address, user1.address]);
         balance = await rewardNFT.balanceOf(user1.address, 0);
         expect(balance).to.be.equal(0);
         balance = await rewardNFT.balanceOf(user2.address, 0);
         expect(balance).to.be.equal(0);
-        await rewardCampaign["claim(address)"](user2.address);
-        await rewardCampaign["claim(address)"](user1.address);
+        await campaignManager["claim(uint256,address)"](campaignId, user2.address);
+        await campaignManager["claim(uint256,address)"](campaignId, user1.address);
 
         balance = await rewardNFT.balanceOf(user1.address, 0);
         expect(balance).to.be.equal(1);
         balance = await rewardNFT.balanceOf(user2.address, 0);
         expect(balance).to.be.equal(1);
 
-        await rewardCampaign["claim(address)"](user2.address);
+        await campaignManager["claim(uint256,address)"](campaignId, user2.address);
         balance = await rewardNFT.balanceOf(user2.address, 0);
         expect(balance).to.be.equal(1);
     });
 
     it("Revert Tests", async() => {
-        await rewardNFT.removeCampaign(rewardCampaign.address);
-        await rewardCampaign.addUsers(0, [user3.address]);
+        await campaignManager.addUsers(campaignId, 0, [user3.address]);
+        await campaignManager.removeCampaign(campaignId);
         await expect(
-            rewardCampaign["claim(address)"](user3.address))
-            .to.be.revertedWith("RewardNFT: !campaign");
-        await rewardNFT.addCampaign(rewardCampaign.address);
+            campaignManager["claim(uint256,address)"](campaignId, user3.address))
+            .to.be.revertedWith("RewardCampaignManager: !campaignId");
+        await campaignManager.addCampaign(campaignId);
     });
 });

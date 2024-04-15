@@ -13,7 +13,7 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
     uint256 public constant COMMON = 2;
     uint256[] public nftTypes;
     mapping(uint256 => bool) burnableNFT;
-    EnumerableSet.AddressSet private campaigns;
+    address public campaignManager;
 
     string private initUri = "https://game.example/api/item/{id}.json";
 
@@ -37,7 +37,7 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
     }
 
     function mint(address _user, uint256 _nftType, uint256 _amount) external {
-        require(campaigns.contains(msg.sender), "RewardNFT: !campaign");
+        require(msg.sender == campaignManager, "RewardNFT: !campaignManager");
         _mint(_user, _nftType, _amount, "");
     }
 
@@ -53,11 +53,7 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
         burnableNFT[_nftType] = _burnable;
     }
 
-    function addCampaign(address _campaign) external onlyOwner {
-        campaigns.add(_campaign);
-    }
-
-    function removeCampaign(address _campaign) external onlyOwner {
-        campaigns.remove(_campaign);
+    function setCampaignManager(address _campaignManager) external onlyOwner {
+        campaignManager = _campaignManager;
     }
 }
