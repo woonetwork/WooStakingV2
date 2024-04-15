@@ -35,9 +35,10 @@ import { ethers } from "hardhat";
 import { deployContract, deployMockContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-import { RewardNFT, NftBooster } from "../../typechain";
+import { RewardNFT, NftBooster, RewardCampaign } from "../../typechain";
 import RewardNFTArtifact from "../../artifacts/contracts/RewardNFT.sol/RewardNFT.json";
 import NftBoosterArtifact from "../../artifacts/contracts/rewarders/NftBooster.sol/NftBooster.json";
+import RewardCampaignArtifact from "../../artifacts/contracts/RewardCampaign.sol/RewardCampaign.json";
 
 
 
@@ -47,40 +48,37 @@ describe("RewardNFT tests", () => {
 
     let rewardNFT: RewardNFT;
     let nftBooster: NftBooster;
+    let rewardCampaign: RewardCampaign;
     let user: SignerWithAddress;
     let user1: SignerWithAddress;
     let user2: SignerWithAddress;
+    let user3: SignerWithAddress;
 
     let usdcToken: Contract;
 
     beforeEach(async () => {
         const signers = await ethers.getSigners();
         owner = signers[0];
-        user = signers[2];
-        user1 = signers[3];
-        user2 = signers[4];
+        user = signers[1];
+        user1 = signers[2];
+        user2 = signers[3];
+        user3 = signers[4];
 
         rewardNFT = await deployContract(owner, RewardNFTArtifact, []) as RewardNFT;
-        await rewardNFT.setCampaign(1);
-
-
+        rewardCampaign = await deployContract(owner, RewardCampaignArtifact, [rewardNFT.address]) as RewardCampaign;
+        await rewardNFT.addCampaign(rewardCampaign.address);
         nftBooster = (await deployContract(owner, NftBoosterArtifact, [rewardNFT.address])) as NftBooster;
-
     });
 
     it("NftBooster Tests", async() => {
-        await rewardNFT.setCampaign(2);
-        await rewardNFT.addUsers(0, [owner.address]);
-        await rewardNFT["claim(address)"](owner.address);
+        await rewardCampaign.addUsers(0, [owner.address]);
+        await rewardCampaign["claim(address)"](owner.address);
 
         await rewardNFT.setApprovalForAll(nftBooster.address, true);
         await nftBooster.stakeNft(0);
 
         let boosterBalance = await rewardNFT.balanceOf(nftBooster.address, 0);
-        // console.log("boosterBalance: %s", boosterBalance);
         expect(boosterBalance).to.be.equal(1);
-
-        await rewardNFT.setCampaign(1);
     });
 
     it("Burnable Tests", async() => {
@@ -95,34 +93,30 @@ describe("RewardNFT tests", () => {
 
     it("Claim Tests", async() => {
         let balance;
-        await rewardNFT.addUsers(0, [user2.address]);
-        await rewardNFT["claim(address)"](user2.address);
+        await rewardCampaign.addUsers(0, [user2.address, user1.address]);
+        balance = await rewardNFT.balanceOf(user1.address, 0);
+        expect(balance).to.be.equal(0);
+        balance = await rewardNFT.balanceOf(user2.address, 0);
+        expect(balance).to.be.equal(0);
+        await rewardCampaign["claim(address)"](user2.address);
+        await rewardCampaign["claim(address)"](user1.address);
 
+        balance = await rewardNFT.balanceOf(user1.address, 0);
+        expect(balance).to.be.equal(1);
         balance = await rewardNFT.balanceOf(user2.address, 0);
         expect(balance).to.be.equal(1);
 
-        await rewardNFT["claim(address)"](user2.address);
+        await rewardCampaign["claim(address)"](user2.address);
         balance = await rewardNFT.balanceOf(user2.address, 0);
         expect(balance).to.be.equal(1);
     });
 
-    // it("Transfer Tests", async () => {
-    //     const nftType = 0; // epic
-    //     const nftAmount = await rewardNFT.balanceOf(rewardNFT.address, nftType);
-    //     console.log("nftAmount: %s", nftAmount);
-
-    //     await rewardNFT.safeTransfer(nftType, user.address, 1);
-    //     const userEpic = await rewardNFT.balanceOf(user.address, nftType);
-    //     // console.log("user Amount: %s", userEpic);
-    //     expect(userEpic).to.be.equal(1);
-
-    //     // await rewardNFT.safeBatchTransferFrom(owner.address, user1.address, [0,1], [50,100], []);
-    //     // const user1Silver = await rewardNFT.balanceOf(user1.address, 1);
-    //     // console.log("user1 SilverAmount: %s", user1Silver);
-
-    // });
-
-    function delay(ms: number) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    it("Revert Tests", async() => {
+        await rewardNFT.removeCampaign(rewardCampaign.address);
+        await rewardCampaign.addUsers(0, [user3.address]);
+        await expect(
+            rewardCampaign["claim(address)"](user3.address))
+            .to.be.revertedWith("RewardNFT: !campaign");
+        await rewardNFT.addCampaign(rewardCampaign.address);
+    });
 });
