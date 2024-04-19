@@ -15,7 +15,7 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
     mapping(uint256 => bool) burnableNFT;
     address public campaignManager;
 
-    string private initUri = "https://game.example/api/item/{id}.json";
+    string private initUri = "https://oss.woo.org/static/images/nft/{id}.gif";
 
     constructor() public ERC1155(initUri) {
         _addNFTType(EPIC, false);
@@ -38,6 +38,10 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
 
     function mint(address _user, uint256 _nftType, uint256 _amount) external {
         require(msg.sender == campaignManager, "RewardNFT: !campaignManager");
+        _mint(_user, _nftType, _amount, "");
+    }
+
+    function mintByAdmin(address _user, uint256 _nftType, uint256 _amount) external onlyAdmin {
         _mint(_user, _nftType, _amount, "");
     }
 

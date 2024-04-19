@@ -8,11 +8,14 @@ import {RewardNFT} from "./RewardNFT.sol";
 contract RewardCampaignManager is BaseAdminOperation {
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    // campaign_id -> nft_type -> user_list
     mapping(uint256 => mapping(uint256 => EnumerableSet.AddressSet)) private users;
-    mapping(uint256 => mapping(uint256 => EnumerableSet.AddressSet)) private claimedUsers;
+
+    // campaign_id -> nft_type -> user -> claimed
+    mapping(uint256 => mapping(uint256 => mapping(address => bool))) private isClaimedUser;
 
     RewardNFT public rewardNFT;
-    mapping(uint256 => bool) public campaignIds;
+    mapping(uint256 => bool) public isActiveCampaign;
 
     constructor(address _rewardNFT) {
         rewardNFT = RewardNFT(_rewardNFT);
@@ -27,17 +30,14 @@ contract RewardCampaignManager is BaseAdminOperation {
     }
 
     function _claim(uint256 _campaignId, address _user) internal returns (uint128) {
-        require(campaignIds[_campaignId], "RewardCampaignManager: !campaignId");
+        require(isActiveCampaign[_campaignId], "RewardCampaignManager: !campaignId");
         uint128 count = 0;
         uint256[] memory nftTypes = rewardNFT.getNftTypes();
         uint256 len = nftTypes.length;
         for (uint256 i = 0; i < len; ++i) {
-            if (
-                users[_campaignId][nftTypes[i]].contains(_user) &&
-                !claimedUsers[_campaignId][nftTypes[i]].contains(_user)
-            ) {
+            if (users[_campaignId][nftTypes[i]].contains(_user) && !isClaimedUser[_campaignId][nftTypes[i]][_user]) {
                 rewardNFT.mint(_user, nftTypes[i], 1);
-                claimedUsers[_campaignId][nftTypes[i]].add(_user);
+                isClaimedUser[_campaignId][nftTypes[i]][_user] = true;
                 count++;
             }
         }
@@ -45,11 +45,9 @@ contract RewardCampaignManager is BaseAdminOperation {
     }
 
     function addUsers(uint256 _campaignId, uint256 _nftType, address[] memory _users) external onlyAdmin {
-        unchecked {
-            uint256 len = _users.length;
-            for (uint256 i = 0; i < len; ++i) {
-                _addUser(_campaignId, _nftType, _users[i]);
-            }
+        uint256 len = _users.length;
+        for (uint256 i = 0; i < len; ++i) {
+            _addUser(_campaignId, _nftType, _users[i]);
         }
     }
 
@@ -57,12 +55,10 @@ contract RewardCampaignManager is BaseAdminOperation {
         users[_campaignId][_nftType].add(_user);
     }
 
-    function _removeUsers(uint256 _campaignId, uint256 _nftType, address[] memory _users) external onlyAdmin {
-        unchecked {
-            uint256 len = _users.length;
-            for (uint256 i = 0; i < len; ++i) {
-                _removeUser(_campaignId, _nftType, _users[i]);
-            }
+    function removeUsers(uint256 _campaignId, uint256 _nftType, address[] memory _users) external onlyAdmin {
+        uint256 len = _users.length;
+        for (uint256 i = 0; i < len; ++i) {
+            _removeUser(_campaignId, _nftType, _users[i]);
         }
     }
 
@@ -71,17 +67,17 @@ contract RewardCampaignManager is BaseAdminOperation {
             return false;
         }
         users[_campaignId][_nftType].remove(_user);
-        if (claimedUsers[_campaignId][_nftType].contains(_user)) {
-            claimedUsers[_campaignId][_nftType].remove(_user);
+        if (isClaimedUser[_campaignId][_nftType][_user]) {
+            isClaimedUser[_campaignId][_nftType][_user] = false;
         }
         return true;
     }
 
     function addCampaign(uint256 _campaignId) external onlyOwner {
-        campaignIds[_campaignId] = true;
+        isActiveCampaign[_campaignId] = true;
     }
 
     function removeCampaign(uint256 _campaignId) external onlyOwner {
-        campaignIds[_campaignId] = false;
+        isActiveCampaign[_campaignId] = false;
     }
 }
