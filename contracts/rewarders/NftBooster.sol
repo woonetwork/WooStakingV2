@@ -38,8 +38,10 @@ import {BaseAdminOperation} from "../BaseAdminOperation.sol";
 import {TransferHelper} from "../util/TransferHelper.sol";
 
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {RewardNFT} from "../RewardNFT.sol";
 
-contract NftBooster is BaseAdminOperation {
+contract NftBooster is IERC1155Receiver, BaseAdminOperation {
     event SetStakeTtl(uint256 newTtl, uint256 oldTtl);
 
     // only applied to controller chain
@@ -62,9 +64,38 @@ contract NftBooster is BaseAdminOperation {
         stakedNft = _stakedNft;
     }
 
+    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+        return interfaceId == type(IERC1155Receiver).interfaceId;
+    }
+
+    function onERC1155Received(
+        address operator,
+        address from,
+        uint256 id,
+        uint256 value,
+        bytes calldata data
+    ) external override returns (bytes4) {
+        // NOTE: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC1155/utils/ERC1155Holder.sol
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address operator,
+        address from,
+        uint256[] calldata ids,
+        uint256[] calldata values,
+        bytes calldata data
+    ) external override returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
+    }
+
     function stakeNft(uint256 _tokenId) external {
         // TODO: really need to burn ERC1155 token?
-        IERC1155(stakedNft).safeTransferFrom(msg.sender, address(this), _tokenId, 1, "0x0");
+        // IERC1155(stakedNft).safeTransferFrom(msg.sender, address(this), _tokenId, 1, "0x0");
+        RewardNFT nftContract = RewardNFT(stakedNft);
+        // if (nftContract.burnable(_tokenId)) {
+        // }
+        nftContract.safeTransferFrom(msg.sender, address(this), _tokenId, 1, "0x0");
 
         lastStakeTs[msg.sender] = block.timestamp;
         lastStakeTokenIds[msg.sender] = _tokenId;
