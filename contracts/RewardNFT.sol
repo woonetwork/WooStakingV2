@@ -41,8 +41,11 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
         _mint(_user, _nftType, _amount, "");
     }
 
-    function airdrop(address _user, uint256 _nftType, uint256 _amount) external onlyAdmin {
-        _mint(_user, _nftType, _amount, "");
+    function batchAirdrop(address[] memory _users, uint256 _nftType, uint256 _amount) external onlyAdmin {
+        uint256 len = _users.length;
+        for (uint256 i = 0; i < len; ++i) {
+            _mint(_users[i], _nftType, _amount, "");
+        }
     }
 
     function setUri(string memory uri) external onlyAdmin {

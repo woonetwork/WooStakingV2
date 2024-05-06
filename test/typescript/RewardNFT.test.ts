@@ -122,4 +122,21 @@ describe("RewardNFT tests", () => {
             .to.be.revertedWith("RewardCampaignManager: !campaignId");
         await campaignManager.addCampaign(campaignId);
     });
+
+    it("Airdrop Tests", async() => {
+        let oldBal2, oldBal3, newBal2, newBal3;
+        let amount = 2;
+
+        oldBal2 = await rewardNFT.balanceOf(user2.address, 0);
+        oldBal3 = await rewardNFT.balanceOf(user3.address, 0);
+        // console.log("oldBal user2, user3: %s %s", oldBal2, oldBal3);
+        await rewardNFT.batchAirdrop([user2.address, user3.address], 0, amount);
+        newBal2 = await rewardNFT.balanceOf(user2.address, 0);
+        newBal3 = await rewardNFT.balanceOf(user3.address, 0);
+
+        // console.log("newBal user2, user3: %s %s", newBal2, newBal3);
+        await expect(newBal2).to.be.equal(oldBal2.add(amount));
+
+        await expect(newBal3).to.be.equal(oldBal3.add(amount));
+    });
 });
