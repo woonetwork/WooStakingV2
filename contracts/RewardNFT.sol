@@ -8,9 +8,9 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 contract RewardNFT is ERC1155, BaseAdminOperation {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    uint256 public constant EPIC = 0;
-    uint256 public constant RARE = 1;
-    uint256 public constant COMMON = 2;
+    uint256 public constant COMMON = 1;
+    uint256 public constant RARE = 2;
+    uint256 public constant EPIC = 3;
     uint256[] public nftTypes;
     mapping(uint256 => bool) burnableNFT;
     address public campaignManager;
