@@ -24,6 +24,14 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
     }
 
     function _addNFTType(uint256 _nftType, bool _burnable) internal {
+        bool exist = false;
+        for (uint256 i = 0; i < nftTypes.length; i++) {
+            if (nftTypes[i] == _nftType) {
+                exist = true;
+                break;
+            }
+        }
+        require(exist == false, "RewardNFT: !nftType");
         nftTypes.push(_nftType);
         burnableNFT[_nftType] = _burnable;
     }
