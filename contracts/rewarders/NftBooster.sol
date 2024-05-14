@@ -47,7 +47,7 @@ contract NftBooster is IERC1155Receiver, BaseAdminOperation {
     // only applied to controller chain
     uint256 public autoCompoundBR;
 
-    address public immutable stakedNft;
+    address public stakedNft;
 
     uint256 public base; // Default: 10000th, 100: 1%, 5000: 50%
 
@@ -133,5 +133,9 @@ contract NftBooster is IERC1155Receiver, BaseAdminOperation {
             require(ratios[i] != 0, "NftBooster: !RATIO");
             boostRatios[ids[i]] = ratios[i];
         }
+    }
+
+    function setStakedNft(address _stakedNft) external onlyAdmin {
+        stakedNft = _stakedNft;
     }
 }
