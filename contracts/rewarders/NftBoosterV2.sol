@@ -41,6 +41,8 @@ import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {RewardNFT} from "../RewardNFT.sol";
 
+// import "hardhat/console.sol";
+
 contract NftBoosterV2 is IERC1155Receiver, BaseAdminOperation {
     event SetStakeTtl(uint256 tokenId, uint256 newTtl, uint256 oldTtl);
 
@@ -50,6 +52,8 @@ contract NftBoosterV2 is IERC1155Receiver, BaseAdminOperation {
     address public stakedNft;
 
     uint256 public base; // Default: 10000th, 100: 1%, 5000: 50%
+    uint256 public maxBurnableTokens; // Max burnable stake tokens
+    uint256 public maxNoBurnableTokens; // Max no-burnable stake tokens
 
     // stake token id => ttl
     mapping(uint256 => uint256) public stakeTokenTtl;
@@ -57,14 +61,19 @@ contract NftBoosterV2 is IERC1155Receiver, BaseAdminOperation {
     // Default: 10000th, 100: 1%, 5000: 50%, token_id => boost ratio
     mapping(uint256 => uint256) public boostRatios;
 
-    // user_address => token_id => last stake timestamp
-    mapping(address => mapping(uint256 => uint256)) public lastStakeTimestamps;
-    // user_address => last stake token id => active
-    mapping(address => mapping(uint256 => bool)) public isActiveStakeTokens;
+    struct StakeToken {
+        uint256 tokenId;
+        uint256 timestamp;
+    }
+
+    // user_address => stake tokens
+    mapping(address => StakeToken[]) public userStakeTokens;
 
     constructor(address _stakedNft) {
         base = 10000;
         stakedNft = _stakedNft;
+        maxBurnableTokens = 3;
+        maxNoBurnableTokens = 1;
 
         RewardNFT nftContract = RewardNFT(stakedNft);
         uint256[] memory nftTypes = nftContract.getNftTypes();
@@ -105,38 +114,64 @@ contract NftBoosterV2 is IERC1155Receiver, BaseAdminOperation {
     }
 
     function stakeNft(uint256 _tokenId) external {
-        // TODO: really need to burn ERC1155 token?
-        // IERC1155(stakedNft).safeTransferFrom(msg.sender, address(this), _tokenId, 1, "0x0");
         RewardNFT nftContract = RewardNFT(stakedNft);
+        uint256 len = userStakeTokens[msg.sender].length;
+        uint256 burnableTokenCount = 0;
+        uint256 noBurnableTokenCount = 0;
+        for (uint256 i = 0; i < len; ++i) {
+            uint256 tokenId = userStakeTokens[msg.sender][i].tokenId;
+            if (nftContract.burnable(tokenId)) {
+                uint256 timestamp = userStakeTokens[msg.sender][i].timestamp;
+                uint256 ttl = stakeTokenTtl[tokenId];
+                if ((block.timestamp - timestamp) > ttl) {
+                    delete userStakeTokens[msg.sender][i];
+                    // console.log("del index delta :", i, block.timestamp - timestamp);
+                } else {
+                    burnableTokenCount += 1;
+                }
+            } else {
+                noBurnableTokenCount += 1;
+            }
+        }
+        if (nftContract.burnable(_tokenId)) {
+            require(burnableTokenCount < maxBurnableTokens, "NftBooster: !maxBurnableTokens");
+        } else {
+            require(noBurnableTokenCount < maxNoBurnableTokens, "NftBooster: !maxNoBurnableTokens");
+        }
         nftContract.safeTransferFrom(msg.sender, address(this), _tokenId, 1, "0x0");
-
-        lastStakeTimestamps[msg.sender][_tokenId] = block.timestamp;
-        isActiveStakeTokens[msg.sender][_tokenId] = true;
+        userStakeTokens[msg.sender].push(StakeToken(_tokenId, block.timestamp));
     }
 
     function unstakeNft(uint256 _tokenId) external {
         address _user = msg.sender;
-        bool isActive = isActiveStakeTokens[_user][_tokenId];
-        require(isActive, "NftBooster: !tokenId");
         RewardNFT nftContract = RewardNFT(stakedNft);
         require(nftContract.burnable(_tokenId) == false, "NftBooster: burnableNft");
+
+        uint256 len = userStakeTokens[_user].length;
+        uint256 oldestTimestamp = block.timestamp;
+        uint256 removeTokenIndex = 0;
+        for (uint256 i = 0; i < len; ++i) {
+            if (userStakeTokens[_user][i].tokenId == _tokenId) {
+                if (userStakeTokens[_user][i].timestamp <= oldestTimestamp) {
+                    removeTokenIndex = i + 1;
+                    oldestTimestamp = userStakeTokens[_user][i].timestamp;
+                }
+            }
+        }
+        require(removeTokenIndex > 0, "NftBooster: !tokenId");
         nftContract.safeTransferFrom(address(this), _user, _tokenId, 1, "0x0");
-        isActiveStakeTokens[_user][_tokenId] = false;
-        lastStakeTimestamps[_user][_tokenId] = 0;
+        delete userStakeTokens[_user][removeTokenIndex - 1];
     }
 
     function boostRatio(address _user) external view returns (uint256) {
         RewardNFT nftContract = RewardNFT(stakedNft);
-        uint256[] memory nftTypes = nftContract.getNftTypes();
-        uint256 len = nftTypes.length;
+        uint256 len = userStakeTokens[_user].length;
         uint256 compoundRatio = base;
         for (uint256 i = 0; i < len; ++i) {
-            uint256 tokenId = nftTypes[i];
+            uint256 tokenId = userStakeTokens[_user][i].tokenId;
+            uint256 timestamp = userStakeTokens[_user][i].timestamp;
             uint256 ttl = stakeTokenTtl[tokenId];
-            if (!isActiveStakeTokens[_user][tokenId]) continue;
-            if ((block.timestamp - lastStakeTimestamps[_user][tokenId]) > ttl) {
-                continue;
-            }
+            if ((block.timestamp - timestamp) > ttl) continue;
             uint256 ratio = boostRatios[tokenId] == 0 ? base : boostRatios[tokenId];
             compoundRatio = (compoundRatio * ratio) / base;
         }

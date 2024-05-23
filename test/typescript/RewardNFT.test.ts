@@ -94,7 +94,7 @@ describe("RewardNFT tests", () => {
         expect(userBal).to.be.equal(1);
     });
 
-    it("NftBoosterV2 Tests", async() => {
+    it("NftBoosterV2 Test1", async() => {
         let nftType = 1;
         await campaignManager.addUsers(campaignId, nftType, [owner.address]);
         await campaignManager["claim(uint256,address)"](campaignId, owner.address);
@@ -119,6 +119,43 @@ describe("RewardNFT tests", () => {
         expect(boosterBalance).to.be.equal(0);
         let userBal = await rewardNFT.balanceOf(owner.address, nftType);
         expect(userBal).to.be.equal(1);
+    });
+
+    it("NftBoosterV2 Test2", async() => {
+        let nftType = 2;
+        await rewardNFT.setBurnable(nftType, true);
+        await campaignManager.addUsers(campaignId, nftType, [owner.address]);
+        await campaignManager["claim(uint256,address)"](campaignId, owner.address);
+
+        await rewardNFT.setApprovalForAll(nftBoosterV2.address, true);
+        await nftBoosterV2.stakeNft(nftType);
+
+        let boosterBalance = await rewardNFT.balanceOf(nftBoosterV2.address, nftType);
+        expect(boosterBalance).to.be.equal(1);
+
+        await nftBoosterV2.setBoostRatios([nftType], [11000]);
+        let boosterRatio = await nftBoosterV2.boostRatio(owner.address);
+        expect(boosterRatio).to.be.equal(11000);
+
+        let campaign2 = 10;
+        await campaignManager.addCampaign(campaign2);
+        await campaignManager.addUsers(campaign2, nftType, [owner.address]);
+        await campaignManager["claim(uint256,address)"](campaign2, owner.address);
+        await nftBoosterV2.stakeNft(nftType);
+
+        boosterRatio = await nftBoosterV2.boostRatio(owner.address);
+        // console.log("boosterRatio: %s", boosterRatio);
+        expect(boosterRatio).to.be.equal(12100);
+
+        let campaign3 = 11;
+        await campaignManager.addCampaign(campaign3);
+        await campaignManager.addUsers(campaign3, nftType, [owner.address]);
+        await campaignManager["claim(uint256,address)"](campaign3, owner.address);
+        // await nftBoosterV2.setStakeTtl(nftType, 0);
+        await nftBoosterV2.stakeNft(nftType);
+        boosterRatio = await nftBoosterV2.boostRatio(owner.address);
+        // console.log("boosterRatio: %s", boosterRatio);
+        expect(boosterRatio).to.be.equal(13310);
     });
 
     it("Burnable Tests", async() => {
