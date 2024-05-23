@@ -80,4 +80,8 @@ contract RewardCampaignManager is BaseAdminOperation {
     function removeCampaign(uint256 _campaignId) external onlyOwner {
         isActiveCampaign[_campaignId] = false;
     }
+
+    function setRewardNFT(address _rewardNFT) external onlyOwner {
+        rewardNFT = RewardNFT(_rewardNFT);
+    }
 }

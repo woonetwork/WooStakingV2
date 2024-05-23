@@ -47,7 +47,7 @@ contract NftBooster is IERC1155Receiver, BaseAdminOperation {
     // only applied to controller chain
     uint256 public autoCompoundBR;
 
-    address public immutable stakedNft;
+    address public stakedNft;
 
     uint256 public base; // Default: 10000th, 100: 1%, 5000: 50%
 
@@ -93,12 +93,20 @@ contract NftBooster is IERC1155Receiver, BaseAdminOperation {
         // TODO: really need to burn ERC1155 token?
         // IERC1155(stakedNft).safeTransferFrom(msg.sender, address(this), _tokenId, 1, "0x0");
         RewardNFT nftContract = RewardNFT(stakedNft);
-        // if (nftContract.burnable(_tokenId)) {
-        // }
         nftContract.safeTransferFrom(msg.sender, address(this), _tokenId, 1, "0x0");
-
         lastStakeTs[msg.sender] = block.timestamp;
         lastStakeTokenIds[msg.sender] = _tokenId;
+    }
+
+    function unstakeNft(uint256 _tokenId) external {
+        address _user = msg.sender;
+        uint256 last_token_id = lastStakeTokenIds[_user];
+        require(last_token_id == _tokenId, "NftBooster: !tokenId");
+        RewardNFT nftContract = RewardNFT(stakedNft);
+        require(nftContract.burnable(_tokenId) == false, "NftBooster: burnableNft");
+        nftContract.safeTransferFrom(address(this), _user, _tokenId, 1, "0x0");
+        delete lastStakeTokenIds[msg.sender];
+        lastStakeTs[msg.sender] = 0;
     }
 
     function boostRatio(address _user) external view returns (uint256) {
@@ -125,5 +133,9 @@ contract NftBooster is IERC1155Receiver, BaseAdminOperation {
             require(ratios[i] != 0, "NftBooster: !RATIO");
             boostRatios[ids[i]] = ratios[i];
         }
+    }
+
+    function setStakedNft(address _stakedNft) external onlyAdmin {
+        stakedNft = _stakedNft;
     }
 }

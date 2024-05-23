@@ -74,19 +74,26 @@ describe("RewardNFT tests", () => {
     });
 
     it("NftBooster Tests", async() => {
-        await campaignManager.addUsers(1, 0, [owner.address]);
+        let nftType = 1;
+        await campaignManager.addUsers(campaignId, nftType, [owner.address]);
         await campaignManager["claim(uint256,address)"](campaignId, owner.address);
 
         await rewardNFT.setApprovalForAll(nftBooster.address, true);
-        await nftBooster.stakeNft(0);
+        await nftBooster.stakeNft(nftType);
 
-        let boosterBalance = await rewardNFT.balanceOf(nftBooster.address, 0);
+        let boosterBalance = await rewardNFT.balanceOf(nftBooster.address, nftType);
         expect(boosterBalance).to.be.equal(1);
+
+        await nftBooster.unstakeNft(nftType);
+        boosterBalance = await rewardNFT.balanceOf(nftBooster.address, nftType);
+        expect(boosterBalance).to.be.equal(0);
+        let userBal = await rewardNFT.balanceOf(owner.address, nftType);
+        expect(userBal).to.be.equal(1);
     });
 
     it("Burnable Tests", async() => {
-        let RELAXING = 3;
-        let COMMON = 2;
+        let RELAXING = 4;
+        let COMMON = 1;
         await rewardNFT.addNFTType(RELAXING, true);
         expect(await rewardNFT.burnable(RELAXING)).to.be.equal(true);
         expect(await rewardNFT.burnable(COMMON)).to.be.equal(false);
@@ -96,26 +103,28 @@ describe("RewardNFT tests", () => {
 
     it("Claim Tests", async() => {
         let balance;
-        await campaignManager.addUsers(campaignId, 0, [user2.address, user1.address]);
-        balance = await rewardNFT.balanceOf(user1.address, 0);
+        let nftType = 1;
+        await campaignManager.addUsers(campaignId, nftType, [user2.address, user1.address]);
+        balance = await rewardNFT.balanceOf(user1.address, nftType);
         expect(balance).to.be.equal(0);
-        balance = await rewardNFT.balanceOf(user2.address, 0);
+        balance = await rewardNFT.balanceOf(user2.address, nftType);
         expect(balance).to.be.equal(0);
         await campaignManager["claim(uint256,address)"](campaignId, user2.address);
         await campaignManager["claim(uint256,address)"](campaignId, user1.address);
 
-        balance = await rewardNFT.balanceOf(user1.address, 0);
+        balance = await rewardNFT.balanceOf(user1.address, nftType);
         expect(balance).to.be.equal(1);
-        balance = await rewardNFT.balanceOf(user2.address, 0);
+        balance = await rewardNFT.balanceOf(user2.address, nftType);
         expect(balance).to.be.equal(1);
 
         await campaignManager["claim(uint256,address)"](campaignId, user2.address);
-        balance = await rewardNFT.balanceOf(user2.address, 0);
+        balance = await rewardNFT.balanceOf(user2.address, nftType);
         expect(balance).to.be.equal(1);
     });
 
     it("Revert Tests", async() => {
-        await campaignManager.addUsers(campaignId, 0, [user3.address]);
+        let nftType = 1;
+        await campaignManager.addUsers(campaignId, nftType, [user3.address]);
         await campaignManager.removeCampaign(campaignId);
         await expect(
             campaignManager["claim(uint256,address)"](campaignId, user3.address))
@@ -126,13 +135,14 @@ describe("RewardNFT tests", () => {
     it("Airdrop Tests", async() => {
         let oldBal2, oldBal3, newBal2, newBal3;
         let amount = 2;
+        let nftType = 1;
 
-        oldBal2 = await rewardNFT.balanceOf(user2.address, 0);
-        oldBal3 = await rewardNFT.balanceOf(user3.address, 0);
+        oldBal2 = await rewardNFT.balanceOf(user2.address, nftType);
+        oldBal3 = await rewardNFT.balanceOf(user3.address, nftType);
         // console.log("oldBal user2, user3: %s %s", oldBal2, oldBal3);
-        await rewardNFT.batchAirdrop([user2.address, user3.address], 0, amount);
-        newBal2 = await rewardNFT.balanceOf(user2.address, 0);
-        newBal3 = await rewardNFT.balanceOf(user3.address, 0);
+        await rewardNFT.batchAirdrop([user2.address, user3.address], nftType, amount);
+        newBal2 = await rewardNFT.balanceOf(user2.address, nftType);
+        newBal3 = await rewardNFT.balanceOf(user3.address, nftType);
 
         // console.log("newBal user2, user3: %s %s", newBal2, newBal3);
         await expect(newBal2).to.be.equal(oldBal2.add(amount));
