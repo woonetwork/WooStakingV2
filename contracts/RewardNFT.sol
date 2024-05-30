@@ -18,9 +18,9 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
     string private initUri = "https://oss.woo.org/static/images/nft/{id}.gif";
 
     constructor() public ERC1155(initUri) {
-        _addNFTType(EPIC, false);
-        _addNFTType(RARE, false);
-        _addNFTType(COMMON, false);
+        _addNFTType(EPIC, true);
+        _addNFTType(RARE, true);
+        _addNFTType(COMMON, true);
     }
 
     function _addNFTType(uint256 _nftType, bool _burnable) internal {

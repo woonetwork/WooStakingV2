@@ -81,6 +81,7 @@ describe("RewardNFT tests", () => {
         await campaignManager.addUsers(campaignId, nftType, [owner.address]);
         await campaignManager["claim(uint256,address)"](campaignId, owner.address);
 
+        await rewardNFT.setBurnable(nftType, false);
         await rewardNFT.setApprovalForAll(nftBooster.address, true);
         await nftBooster.stakeNft(nftType);
 
@@ -92,15 +93,18 @@ describe("RewardNFT tests", () => {
         expect(boosterBalance).to.be.equal(0);
         let userBal = await rewardNFT.balanceOf(owner.address, nftType);
         expect(userBal).to.be.equal(1);
+
+        await rewardNFT.setBurnable(nftType, true);
     });
 
     it("NftBoosterV2 Test1", async() => {
         let nftType = 1;
+        let bucket = 0;
         await campaignManager.addUsers(campaignId, nftType, [owner.address]);
         await campaignManager["claim(uint256,address)"](campaignId, owner.address);
 
         await rewardNFT.setApprovalForAll(nftBoosterV2.address, true);
-        await nftBoosterV2.stakeNft(nftType);
+        await nftBoosterV2.stakeShortNft(nftType, bucket);
 
         let boosterBalance = await rewardNFT.balanceOf(nftBoosterV2.address, nftType);
         expect(boosterBalance).to.be.equal(1);
@@ -113,12 +117,6 @@ describe("RewardNFT tests", () => {
         boosterRatio = await nftBoosterV2.boostRatio(owner.address);
         // console.log("boosterRatio: %s", boosterRatio);
         expect(boosterRatio).to.be.equal(11000);
-
-        await nftBoosterV2.unstakeNft(nftType);
-        boosterBalance = await rewardNFT.balanceOf(nftBoosterV2.address, nftType);
-        expect(boosterBalance).to.be.equal(0);
-        let userBal = await rewardNFT.balanceOf(owner.address, nftType);
-        expect(userBal).to.be.equal(1);
     });
 
     it("NftBoosterV2 Test2", async() => {
@@ -128,7 +126,7 @@ describe("RewardNFT tests", () => {
         await campaignManager["claim(uint256,address)"](campaignId, owner.address);
 
         await rewardNFT.setApprovalForAll(nftBoosterV2.address, true);
-        await nftBoosterV2.stakeNft(nftType);
+        await nftBoosterV2.stakeShortNft(nftType, 0);
 
         let boosterBalance = await rewardNFT.balanceOf(nftBoosterV2.address, nftType);
         expect(boosterBalance).to.be.equal(1);
@@ -141,7 +139,8 @@ describe("RewardNFT tests", () => {
         await campaignManager.addCampaign(campaign2);
         await campaignManager.addUsers(campaign2, nftType, [owner.address]);
         await campaignManager["claim(uint256,address)"](campaign2, owner.address);
-        await nftBoosterV2.stakeNft(nftType);
+        await nftBoosterV2.setActiveBucket(1, true);
+        await nftBoosterV2.stakeShortNft(nftType, 1);
 
         boosterRatio = await nftBoosterV2.boostRatio(owner.address);
         // console.log("boosterRatio: %s", boosterRatio);
@@ -151,21 +150,25 @@ describe("RewardNFT tests", () => {
         await campaignManager.addCampaign(campaign3);
         await campaignManager.addUsers(campaign3, nftType, [owner.address]);
         await campaignManager["claim(uint256,address)"](campaign3, owner.address);
-        // await nftBoosterV2.setStakeTtl(nftType, 0);
-        await nftBoosterV2.stakeNft(nftType);
+        await nftBoosterV2.setActiveBucket(2, true);
+        await nftBoosterV2.stakeShortNft(nftType, 2);
         boosterRatio = await nftBoosterV2.boostRatio(owner.address);
         // console.log("boosterRatio: %s", boosterRatio);
         expect(boosterRatio).to.be.equal(13310);
+
+        await nftBoosterV2.setActiveBucket(2, false);
+        boosterRatio = await nftBoosterV2.boostRatio(owner.address);
+        expect(boosterRatio).to.be.equal(12100);
     });
 
     it("Burnable Tests", async() => {
         let RELAXING = 4;
         let COMMON = 1;
-        await rewardNFT.addNFTType(RELAXING, true);
-        expect(await rewardNFT.burnable(RELAXING)).to.be.equal(true);
-        expect(await rewardNFT.burnable(COMMON)).to.be.equal(false);
-        await rewardNFT.setBurnable(RELAXING, false);
+        await rewardNFT.addNFTType(RELAXING, false);
         expect(await rewardNFT.burnable(RELAXING)).to.be.equal(false);
+        expect(await rewardNFT.burnable(COMMON)).to.be.equal(true);
+        await rewardNFT.setBurnable(RELAXING, true);
+        expect(await rewardNFT.burnable(RELAXING)).to.be.equal(true);
     });
 
     it("Claim Tests", async() => {
