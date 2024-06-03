@@ -35,9 +35,10 @@ import { ethers } from "hardhat";
 import { deployContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-import { RewardNFT, NftBooster, RewardCampaignManager } from "../../typechain";
+import { RewardNFT, NftBooster, NftBoosterV2, RewardCampaignManager } from "../../typechain";
 import RewardNFTArtifact from "../../artifacts/contracts/RewardNFT.sol/RewardNFT.json";
 import NftBoosterArtifact from "../../artifacts/contracts/rewarders/NftBooster.sol/NftBooster.json";
+import NftBoosterV2Artifact from "../../artifacts/contracts/rewarders/NftBoosterV2.sol/NftBoosterV2.json";
 import RewardCampaignManagerArtifact from "../../artifacts/contracts/RewardCampaignManager.sol/RewardCampaignManager.json";
 
 
@@ -48,6 +49,7 @@ describe("RewardNFT tests", () => {
 
     let rewardNFT: RewardNFT;
     let nftBooster: NftBooster;
+    let nftBoosterV2: NftBoosterV2;
     let campaignManager: RewardCampaignManager;
     let user: SignerWithAddress;
     let user1: SignerWithAddress;
@@ -71,6 +73,7 @@ describe("RewardNFT tests", () => {
         await campaignManager.addCampaign(campaignId);
         await rewardNFT.setCampaignManager(campaignManager.address);
         nftBooster = (await deployContract(owner, NftBoosterArtifact, [rewardNFT.address])) as NftBooster;
+        nftBoosterV2 = (await deployContract(owner, NftBoosterV2Artifact, [rewardNFT.address])) as NftBoosterV2;
     });
 
     it("NftBooster Tests", async() => {
@@ -78,6 +81,7 @@ describe("RewardNFT tests", () => {
         await campaignManager.addUsers(campaignId, nftType, [owner.address]);
         await campaignManager["claim(uint256,address)"](campaignId, owner.address);
 
+        await rewardNFT.setBurnable(nftType, false);
         await rewardNFT.setApprovalForAll(nftBooster.address, true);
         await nftBooster.stakeNft(nftType);
 
@@ -89,16 +93,82 @@ describe("RewardNFT tests", () => {
         expect(boosterBalance).to.be.equal(0);
         let userBal = await rewardNFT.balanceOf(owner.address, nftType);
         expect(userBal).to.be.equal(1);
+
+        await rewardNFT.setBurnable(nftType, true);
+    });
+
+    it("NftBoosterV2 Test1", async() => {
+        let nftType = 1;
+        let bucket = 0;
+        await campaignManager.addUsers(campaignId, nftType, [owner.address]);
+        await campaignManager["claim(uint256,address)"](campaignId, owner.address);
+
+        await rewardNFT.setApprovalForAll(nftBoosterV2.address, true);
+        await nftBoosterV2.stakeShortNft(nftType, bucket);
+
+        let boosterBalance = await rewardNFT.balanceOf(nftBoosterV2.address, nftType);
+        expect(boosterBalance).to.be.equal(1);
+
+        let boosterRatio = await nftBoosterV2.boostRatio(owner.address);
+        // console.log("boosterRatio: %s", boosterRatio);
+        expect(boosterRatio).to.be.equal(10000);
+
+        await nftBoosterV2.setBoostRatios([nftType], [11000]);
+        boosterRatio = await nftBoosterV2.boostRatio(owner.address);
+        // console.log("boosterRatio: %s", boosterRatio);
+        expect(boosterRatio).to.be.equal(11000);
+    });
+
+    it("NftBoosterV2 Test2", async() => {
+        let nftType = 2;
+        await rewardNFT.setBurnable(nftType, true);
+        await campaignManager.addUsers(campaignId, nftType, [owner.address]);
+        await campaignManager["claim(uint256,address)"](campaignId, owner.address);
+
+        await rewardNFT.setApprovalForAll(nftBoosterV2.address, true);
+        await nftBoosterV2.stakeShortNft(nftType, 0);
+
+        let boosterBalance = await rewardNFT.balanceOf(nftBoosterV2.address, nftType);
+        expect(boosterBalance).to.be.equal(1);
+
+        await nftBoosterV2.setBoostRatios([nftType], [11000]);
+        let boosterRatio = await nftBoosterV2.boostRatio(owner.address);
+        expect(boosterRatio).to.be.equal(11000);
+
+        let campaign2 = 10;
+        await campaignManager.addCampaign(campaign2);
+        await campaignManager.addUsers(campaign2, nftType, [owner.address]);
+        await campaignManager["claim(uint256,address)"](campaign2, owner.address);
+        await nftBoosterV2.setActiveBucket(1, true);
+        await nftBoosterV2.stakeShortNft(nftType, 1);
+
+        boosterRatio = await nftBoosterV2.boostRatio(owner.address);
+        // console.log("boosterRatio: %s", boosterRatio);
+        expect(boosterRatio).to.be.equal(12100);
+
+        let campaign3 = 11;
+        await campaignManager.addCampaign(campaign3);
+        await campaignManager.addUsers(campaign3, nftType, [owner.address]);
+        await campaignManager["claim(uint256,address)"](campaign3, owner.address);
+        await nftBoosterV2.setActiveBucket(2, true);
+        await nftBoosterV2.stakeShortNft(nftType, 2);
+        boosterRatio = await nftBoosterV2.boostRatio(owner.address);
+        // console.log("boosterRatio: %s", boosterRatio);
+        expect(boosterRatio).to.be.equal(13310);
+
+        await nftBoosterV2.setActiveBucket(2, false);
+        boosterRatio = await nftBoosterV2.boostRatio(owner.address);
+        expect(boosterRatio).to.be.equal(12100);
     });
 
     it("Burnable Tests", async() => {
         let RELAXING = 4;
         let COMMON = 1;
-        await rewardNFT.addNFTType(RELAXING, true);
-        expect(await rewardNFT.burnable(RELAXING)).to.be.equal(true);
-        expect(await rewardNFT.burnable(COMMON)).to.be.equal(false);
-        await rewardNFT.setBurnable(RELAXING, false);
+        await rewardNFT.addNFTType(RELAXING, false);
         expect(await rewardNFT.burnable(RELAXING)).to.be.equal(false);
+        expect(await rewardNFT.burnable(COMMON)).to.be.equal(true);
+        await rewardNFT.setBurnable(RELAXING, true);
+        expect(await rewardNFT.burnable(RELAXING)).to.be.equal(true);
     });
 
     it("Claim Tests", async() => {
