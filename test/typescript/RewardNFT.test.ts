@@ -81,6 +81,9 @@ describe("RewardNFT tests", () => {
         await campaignManager.addUsers(campaignId, nftType, [owner.address]);
         await campaignManager["claim(uint256,address)"](campaignId, owner.address);
 
+        let isClaimed = await campaignManager.isClaimed(campaignId, nftType, owner.address);
+        expect(isClaimed).to.be.equal(true);
+
         await rewardNFT.setBurnable(nftType, false);
         await rewardNFT.setApprovalForAll(nftBooster.address, true);
         await nftBooster.stakeNft(nftType);

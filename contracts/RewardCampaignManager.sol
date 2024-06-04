@@ -29,6 +29,10 @@ contract RewardCampaignManager is BaseAdminOperation {
         return _claim(_campaignId, msg.sender);
     }
 
+    function isClaimed(uint256 _campaignId, uint256 _nftType, address _user) external view returns (bool) {
+        return isClaimedUser[_campaignId][_nftType][_user];
+    }
+
     function _claim(uint256 _campaignId, address _user) internal returns (uint128) {
         require(isActiveCampaign[_campaignId], "RewardCampaignManager: !campaignId");
         uint128 count = 0;
