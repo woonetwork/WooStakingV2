@@ -21,6 +21,8 @@
 
 
 # NOTE: controller add proxy contracts
-npx hardhat run --network arbitrum_mainnet scripts/deploy_proxy_contracts.ts
+# npx hardhat run --network arbitrum_mainnet scripts/deploy_proxy_contracts.ts
+
+npx hardhat run --network arbitrum_mainnet scripts/arbitrum/RewardNFT.ts
 
 
