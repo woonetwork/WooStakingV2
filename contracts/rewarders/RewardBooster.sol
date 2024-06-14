@@ -54,6 +54,14 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
 
     mapping(address => uint256) public boostRatio;
 
+    struct UserBoostRatioDetail {
+        uint256 volRatio;
+        uint256 tvlRatio;
+        uint256 nftRatio;
+        uint256 autoCompoundRatio;
+    }
+    mapping(address => UserBoostRatioDetail) public userBoostRatioDetail;
+
     uint256 public immutable base; // Default: 10000th, 100: 1%, 5000: 50%
 
     IRewarder public mpRewarder;
@@ -77,14 +85,18 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
             for (uint256 i = 0; i < users.length; ++i) {
                 address _user = users[i];
                 mpRewarder.updateRewardForUser(_user); // settle the reward for prevous boost ratios
+                UserBoostRatioDetail memory item = UserBoostRatioDetail({
+                    volRatio: volFlags[i] ? volumeBR : base,
+                    tvlRatio: tvlFlags[i] ? tvlBR : base,
+                    nftRatio: nftBooster.boostRatio(_user),
+                    autoCompoundRatio: compounder.contains(_user) ? autoCompoundBR : base
+                });
                 boostRatio[_user] =
-                    ((volFlags[i] ? volumeBR : base) *
-                        (tvlFlags[i] ? tvlBR : base) *
-                        nftBooster.boostRatio(_user) *
-                        (compounder.contains(_user) ? autoCompoundBR : base)) /
+                    (item.volRatio * item.tvlRatio * item.nftRatio * item.autoCompoundRatio) /
                     base /
                     base /
                     nftBooster.base();
+                userBoostRatioDetail[_user] = item;
                 mpRewarder.clearRewardToDebt(_user);
             }
         }
