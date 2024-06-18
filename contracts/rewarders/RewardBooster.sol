@@ -102,6 +102,30 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
         }
     }
 
+    function migrateUserRatios(
+        address[] memory users,
+        bool[] memory volFlags,
+        bool[] memory tvlFlags
+    ) external onlyAdmin {
+        unchecked {
+            for (uint256 i = 0; i < users.length; ++i) {
+                address _user = users[i];
+                UserBoostRatioDetail memory item = UserBoostRatioDetail({
+                    volRatio: volFlags[i] ? volumeBR : base,
+                    tvlRatio: tvlFlags[i] ? tvlBR : base,
+                    nftRatio: nftBooster.boostRatio(_user),
+                    autoCompoundRatio: compounder.contains(_user) ? autoCompoundBR : base
+                });
+                boostRatio[_user] =
+                    (item.volRatio * item.tvlRatio * item.nftRatio * item.autoCompoundRatio) /
+                    base /
+                    base /
+                    nftBooster.base();
+                userBoostRatioDetail[_user] = item;
+            }
+        }
+    }
+
     function setMPRewarder(address _rewarder) external onlyAdmin {
         mpRewarder = IRewarder(_rewarder);
         emit SetMPRewarder(_rewarder);
