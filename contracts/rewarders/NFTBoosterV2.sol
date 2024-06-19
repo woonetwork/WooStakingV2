@@ -34,57 +34,42 @@ pragma solidity ^0.8.4;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+
 import {BaseAdminOperation} from "../BaseAdminOperation.sol";
-import {TransferHelper} from "../util/TransferHelper.sol";
 
-import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-import {RewardNFT} from "../RewardNFT.sol";
+import {INFTBoosterV2} from "../interfaces/INFTBoosterV2.sol";
+import {IRewardNFT} from "../interfaces/IRewardNFT.sol";
 
-// import "hardhat/console.sol";
-
-contract NftBoosterV2 is IERC1155Receiver, BaseAdminOperation {
-    event SetStakeTtl(uint256 tokenId, uint256 newTtl, uint256 oldTtl);
-
-    // only applied to controller chain
-    uint256 public autoCompoundBR;
-
-    address public stakedNft;
+contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
+    IRewardNFT public stakedNFT;
 
     uint256 public base; // Default: 10000th, 100: 1%, 5000: 50%
 
-    // stake token id => ttl
-    mapping(uint256 => uint256) public stakeTokenTtl;
+    // stakeTokenId => ttl
+    mapping(uint256 => uint256) public stakeTokenTTLs;
 
-    // Default: 10000th, 100: 1%, 5000: 50%, token_id => boost ratio
+    // Default: 10000th, 100: 1%, 5000: 50%, stakeTokenId => boostRatio
     mapping(uint256 => uint256) public boostRatios;
 
-    struct StakeShortToken {
-        uint256 tokenId;
-        uint256 timestamp;
-    }
-
-    // user_address => stake tokens
+    // userAddress => stakeShortTokens
     mapping(address => StakeShortToken[3]) public userStakeShortTokens;
     mapping(uint256 => bool) public isActiveBucket;
 
-    constructor(address _stakedNft) {
+    constructor(address _stakedNFT) {
+        stakedNFT = IRewardNFT(_stakedNFT);
         base = 10000;
-        stakedNft = _stakedNft;
         isActiveBucket[0] = true;
 
-        RewardNFT nftContract = RewardNFT(stakedNft);
-        uint256[] memory nftTypes = nftContract.getNftTypes();
-        uint256 len = nftTypes.length;
+        uint256[] memory tokenIds = stakedNFT.getAllTokenIds();
+        uint256 len = tokenIds.length;
         for (uint256 i = 0; i < len; ++i) {
-            uint256 tokenId = nftTypes[i];
-            stakeTokenTtl[tokenId] = 5 days;
+            uint256 tokenId = tokenIds[i];
+            stakeTokenTTLs[tokenId] = 5 days;
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
-        return interfaceId == type(IERC1155Receiver).interfaceId;
-    }
+    // --------------------- Business Functions --------------------- //
 
     function onERC1155Received(
         address operator,
@@ -107,54 +92,58 @@ contract NftBoosterV2 is IERC1155Receiver, BaseAdminOperation {
         return this.onERC1155BatchReceived.selector;
     }
 
-    function stakeShortNft(uint256 _tokenId, uint256 _index) external {
+    function stakeShortNFT(uint256 _tokenId, uint256 _index) external {
         address user = msg.sender;
-        RewardNFT nftContract = RewardNFT(stakedNft);
-        require(_index < userStakeShortTokens[user].length, "NftBooster: !largeBucket");
-        require(isActiveBucket[_index], "NftBooster: !activeBucket");
-        require(stakeTokenTtl[_tokenId] > 0, "NftBooster: !tokenId");
-        nftContract.safeTransferFrom(user, address(this), _tokenId, 1, "");
+        require(isActiveBucket[_index], "NFTBooster: !activeBucket");
+        require(_index < userStakeShortTokens[user].length, "NFTBooster: !largeBucket");
+        require(stakeTokenTTLs[_tokenId] > 0, "NFTBooster: !tokenId");
+        stakedNFT.safeTransferFrom(user, address(this), _tokenId, 1, "");
         userStakeShortTokens[user][_index] = StakeShortToken(_tokenId, block.timestamp);
     }
 
+    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+        return interfaceId == type(IERC1155Receiver).interfaceId;
+    }
+
     function boostRatio(address _user) external view returns (uint256 compoundRatio) {
-        RewardNFT nftContract = RewardNFT(stakedNft);
         uint256 len = userStakeShortTokens[_user].length;
         compoundRatio = base;
         for (uint256 i = 0; i < len; ++i) {
             if (!isActiveBucket[i]) continue; // not active bucket
             uint256 tokenId = userStakeShortTokens[_user][i].tokenId;
             uint256 timestamp = userStakeShortTokens[_user][i].timestamp;
-            if (tokenId == 0) continue; // emtpy token
-            if ((block.timestamp - timestamp) > stakeTokenTtl[tokenId]) continue;
+            if (tokenId == 0) continue; // empty token
+            if ((block.timestamp - timestamp) > stakeTokenTTLs[tokenId]) continue;
             uint256 ratio = boostRatios[tokenId] == 0 ? base : boostRatios[tokenId];
             compoundRatio = (compoundRatio * ratio) / base;
         }
     }
 
-    function setActiveBucket(uint256 _bucket, bool _active) external onlyAdmin {
-        isActiveBucket[_bucket] = _active;
-    }
+    // --------------------- Admin Functions --------------------- //
 
-    function setStakeTtl(uint256 _tokenId, uint256 _ttl) external onlyAdmin {
-        uint256 oldTtl = stakeTokenTtl[_tokenId];
-        stakeTokenTtl[_tokenId] = _ttl;
-
-        emit SetStakeTtl(_tokenId, _ttl, oldTtl);
+    function setStakedNFT(address _stakedNFT) external onlyAdmin {
+        stakedNFT = IRewardNFT(_stakedNFT);
     }
 
     function setBase(uint256 _base) external onlyAdmin {
         base = _base;
     }
 
-    function setBoostRatios(uint256[] calldata ids, uint256[] calldata ratios) external onlyAdmin {
-        for (uint256 i = 0; i < ids.length; ++i) {
-            require(ratios[i] != 0, "NftBooster: !RATIO");
-            boostRatios[ids[i]] = ratios[i];
+    function setStakeTokenTTL(uint256 _tokenId, uint256 _ttl) external onlyAdmin {
+        uint256 oldTTL = stakeTokenTTLs[_tokenId];
+        stakeTokenTTLs[_tokenId] = _ttl;
+
+        emit SetStakeTokenTTL(_tokenId, _ttl, oldTTL);
+    }
+
+    function setBoostRatios(uint256[] calldata _ids, uint256[] calldata _ratios) external onlyAdmin {
+        for (uint256 i = 0; i < _ids.length; ++i) {
+            require(_ratios[i] != 0, "NFTBooster: !_ratios");
+            boostRatios[_ids[i]] = _ratios[i];
         }
     }
 
-    function setStakedNft(address _stakedNft) external onlyAdmin {
-        stakedNft = _stakedNft;
+    function setActiveBucket(uint256 _bucket, bool _active) external onlyAdmin {
+        isActiveBucket[_bucket] = _active;
     }
 }
