@@ -147,9 +147,9 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
         emit SetAutoCompounder(_compounder);
     }
 
-    function setNftBooster(address _nftBooster) external onlyAdmin {
+    function setNFTBooster(address _nftBooster) external onlyAdmin {
         nftBooster = INFTBoosterV2(_nftBooster);
-        emit SetNftBooster(_nftBooster);
+        emit SetNFTBooster(_nftBooster);
     }
 
     function setVolumeBR(uint256 _br) external onlyAdmin {
