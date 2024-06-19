@@ -1,13 +1,50 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+/*
+
+░██╗░░░░░░░██╗░█████╗░░█████╗░░░░░░░███████╗██╗
+░██║░░██╗░░██║██╔══██╗██╔══██╗░░░░░░██╔════╝██║
+░╚██╗████╗██╔╝██║░░██║██║░░██║█████╗█████╗░░██║
+░░████╔═████║░██║░░██║██║░░██║╚════╝██╔══╝░░██║
+░░╚██╔╝░╚██╔╝░╚█████╔╝╚█████╔╝░░░░░░██║░░░░░██║
+░░░╚═╝░░░╚═╝░░░╚════╝░░╚════╝░░░░░░░╚═╝░░░░░╚═╝
+
+*
+* MIT License
+* ===========
+*
+* Copyright (c) 2020 WooTrade
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 
-contract RewardNFT is ERC1155, BaseAdminOperation {
+import {IRewardNFT} from "./interfaces/IRewardNFT.sol";
+
+contract RewardNFT is IRewardNFT, ERC1155, BaseAdminOperation {
     using EnumerableSet for EnumerableSet.AddressSet;
+    using Strings for uint256;
 
     uint256 public constant UNCOMMON = 1;
     uint256 public constant RARE = 2;
@@ -18,9 +55,9 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
 
     address public campaignManager;
 
-    string private initUri = "https://oss.woo.org/static/images/nft/{id}.webm";
+    mapping(uint256 => string) private baseURIs;
 
-    constructor() ERC1155(initUri) {
+    constructor() ERC1155("") {
         _addNFTType(UNCOMMON, true);
         _addNFTType(RARE, true);
         _addNFTType(EPIC, true);
@@ -35,6 +72,16 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
 
     function getAllNFTTypes() external view returns (uint256[] memory) {
         return nftTypes;
+    }
+
+    function uri(uint256 _tokenId) public view override returns (string memory) {
+        for (uint256 i = 0; i < nftTypes.length; i += 1) {
+            if (_tokenId <= nftTypes[i]) {
+                return string(abi.encodePacked(baseURIs[_tokenId], _tokenId.toString()));
+            }
+        }
+
+        return "";
     }
 
     function _addNFTType(uint256 _nftType, bool _burnable) internal {
@@ -59,8 +106,8 @@ contract RewardNFT is ERC1155, BaseAdminOperation {
         }
     }
 
-    function setUri(string memory uri) external onlyAdmin {
-        _setURI(uri);
+    function setBaseURI(uint256 _tokenId, string memory _baseURI) external onlyAdmin {
+        baseURIs[_tokenId] = _baseURI;
     }
 
     function addNFTType(uint256 _nftType, bool _burnable) external onlyOwner {
