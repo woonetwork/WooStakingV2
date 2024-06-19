@@ -9,9 +9,11 @@ interface INFTBoosterV2 {
         uint256 timestamp;
     }
 
+    function base() external view returns (uint256);
+
     function stakeShortNFT(uint256 _tokenId, uint256 _index) external;
 
-    function boostRatio(address _user) external view returns (uint256 compoundRatio);
+    function boostRatio(address _user) external view returns (uint256 compoundRatio, uint256[3] memory stakeTokenIds);
 
     function getUserTier(address _user) external view returns (uint256 userTier);
 }
