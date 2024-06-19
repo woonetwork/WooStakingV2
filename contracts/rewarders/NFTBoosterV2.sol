@@ -174,10 +174,11 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
         emit SetStakeTokenTTL(_tokenId, _ttl, oldTTL);
     }
 
-    function setBoostRatios(uint256[] calldata _ids, uint256[] calldata _ratios) external onlyAdmin {
-        for (uint256 i = 0; i < _ids.length; ++i) {
+    function setBoostRatios(uint256[] calldata _tokenIds, uint256[] calldata _ratios) external onlyAdmin {
+        uint256 len = _tokenIds.length;
+        for (uint256 i = 0; i < len; ++i) {
             require(_ratios[i] != 0, "NFTBooster: !_ratios");
-            boostRatios[_ids[i]] = _ratios[i];
+            boostRatios[_tokenIds[i]] = _ratios[i];
         }
     }
 
@@ -185,11 +186,20 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
         isActiveBucket[_bucket] = _active;
     }
 
-    function setTierThresholds(uint256 _tier, uint256 _threshold) external onlyAdmin {
-        tierThresholds[_tier] = _threshold;
+    function setTierThresholds(uint256[] calldata _tiers, uint256[] calldata _thresholds) external onlyAdmin {
+        uint256 len = _tiers.length;
+        for (uint256 i = 0; i < len; ++i) {
+            tierThresholds[_tiers[i]] = _thresholds[i];
+        }
     }
 
-    function setTokenBoostDecayRatios(uint256 _tokenId, uint256 _boostDecayRatio) external onlyAdmin {
-        tokenBoostDecayRatios[_tokenId] = _boostDecayRatio;
+    function setTokenBoostDecayRatios(
+        uint256[] calldata _tokenIds,
+        uint256[] calldata _boostDecayRatios
+    ) external onlyAdmin {
+        uint256 len = _tokenIds.length;
+        for (uint256 i = 0; i < len; ++i) {
+            tokenBoostDecayRatios[_tokenIds[i]] = _boostDecayRatios[i];
+        }
     }
 }
