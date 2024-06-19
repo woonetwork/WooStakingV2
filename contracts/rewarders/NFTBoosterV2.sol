@@ -40,11 +40,15 @@ import {BaseAdminOperation} from "../BaseAdminOperation.sol";
 
 import {INFTBoosterV2} from "../interfaces/INFTBoosterV2.sol";
 import {IRewardNFT} from "../interfaces/IRewardNFT.sol";
+import {IWooStakingManager} from "../interfaces/IWooStakingManager.sol";
 
 contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
     IRewardNFT public stakedNFT;
+    IWooStakingManager public stakingManager;
 
     uint256 public base; // Default: 10000th, 100: 1%, 5000: 50%
+
+    uint256 public tierCount = 10;
 
     // stakeTokenId => ttl
     mapping(uint256 => uint256) public stakeTokenTTLs;
@@ -54,7 +58,12 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
 
     // userAddress => stakeShortTokens
     mapping(address => StakeShortToken[3]) public userStakeShortTokens;
+    // bucketIndex => isActive
     mapping(uint256 => bool) public isActiveBucket;
+    // tier => wooBalThreshold
+    mapping(uint256 => uint256) public tierThresholds;
+    // tokenId => boostDecayRate
+    mapping(uint256 => uint256) public tokenBoostDecayRatios;
 
     constructor(address _stakedNFT) {
         stakedNFT = IRewardNFT(_stakedNFT);
@@ -67,6 +76,17 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
             uint256 tokenId = tokenIds[i];
             stakeTokenTTLs[tokenId] = 5 days;
         }
+
+        tierThresholds[1] = 1_800e18;
+        tierThresholds[2] = 5_000e18;
+        tierThresholds[3] = 10_000e18;
+        tierThresholds[4] = 25_000e18;
+        tierThresholds[5] = 100_000e18;
+        tierThresholds[6] = 250_000e18;
+        tierThresholds[7] = 420_000e18;
+        tierThresholds[8] = 690_000e18;
+        tierThresholds[9] = 1_000_000e18;
+        tierThresholds[10] = 5_000_000e18;
     }
 
     // --------------------- Business Functions --------------------- //
@@ -107,6 +127,7 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
 
     function boostRatio(address _user) external view returns (uint256 compoundRatio) {
         uint256 len = userStakeShortTokens[_user].length;
+        uint256 userTier = getUserTier(_user);
         compoundRatio = base;
         for (uint256 i = 0; i < len; ++i) {
             if (!isActiveBucket[i]) continue; // not active bucket
@@ -115,8 +136,21 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
             if (tokenId == 0) continue; // empty token
             if ((block.timestamp - timestamp) > stakeTokenTTLs[tokenId]) continue;
             uint256 ratio = boostRatios[tokenId] == 0 ? base : boostRatios[tokenId];
-            compoundRatio = (compoundRatio * ratio) / base;
+            uint256 accBoostDecayRatio = (base - tokenBoostDecayRatios[tokenId]) ** (userTier - 1);
+            uint256 ratioAfterDecay = (ratio * accBoostDecayRatio) / (base ** (userTier - 1));
+            compoundRatio = (compoundRatio * ratioAfterDecay) / base;
         }
+    }
+
+    function getUserTier(address _user) public view returns (uint256 userTier) {
+        uint256 wooBal = stakingManager.wooBalance(_user);
+        for (uint256 i = tierCount; i > 0; --i) {
+            if (wooBal >= tierThreshold[i]) {
+                return i;
+            }
+        }
+
+        return 1; // regard tier0 as tier1 in nft boost calculation
     }
 
     // --------------------- Admin Functions --------------------- //
@@ -127,6 +161,10 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
 
     function setBase(uint256 _base) external onlyAdmin {
         base = _base;
+    }
+
+    function setTierCount(uint256 _tierCount) external onlyAdmin {
+        tierCount = _tierCount;
     }
 
     function setStakeTokenTTL(uint256 _tokenId, uint256 _ttl) external onlyAdmin {
@@ -145,5 +183,13 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
 
     function setActiveBucket(uint256 _bucket, bool _active) external onlyAdmin {
         isActiveBucket[_bucket] = _active;
+    }
+
+    function setTierThresholds(uint256 _tier, uint256 _threshold) external onlyAdmin {
+        tierThresholds[_tier] = _threshold;
+    }
+
+    function setTokenBoostDecayRatios(uint256 _tokenId, uint256 _boostDecayRatio) external onlyAdmin {
+        tokenBoostDecayRatios[_tokenId] = _boostDecayRatio;
     }
 }
