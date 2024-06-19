@@ -156,11 +156,11 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
 
     // --------------------- Admin Functions --------------------- //
 
-    function setStakedNFT(address _stakedNFT) external onlyAdmin {
+    function setStakedNFT(address _stakedNFT) external onlyOwner {
         stakedNFT = IRewardNFT(_stakedNFT);
     }
 
-    function setStakingManager(address _stakingManager) external onlyAdmin {
+    function setStakingManager(address _stakingManager) external onlyOwner {
         stakingManager = IWooStakingManager(_stakingManager);
     }
 
@@ -168,7 +168,7 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
         base = _base;
     }
 
-    function setTierCount(uint256 _tierCount) external onlyAdmin {
+    function setTierCount(uint256 _tierCount) external onlyOwner {
         tierCount = _tierCount;
     }
 
@@ -179,7 +179,7 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
         emit SetStakeTokenTTL(_tokenId, _ttl, oldTTL);
     }
 
-    function setBoostRatios(uint256[] calldata _tokenIds, uint256[] calldata _ratios) external onlyAdmin {
+    function setBoostRatios(uint256[] calldata _tokenIds, uint256[] calldata _ratios) external onlyOwner {
         uint256 len = _tokenIds.length;
         for (uint256 i = 0; i < len; ++i) {
             require(_ratios[i] != 0, "NFTBooster: !_ratios");
@@ -187,11 +187,11 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
         }
     }
 
-    function setActiveBucket(uint256 _bucket, bool _active) external onlyAdmin {
+    function setActiveBucket(uint256 _bucket, bool _active) external onlyOwner {
         isActiveBucket[_bucket] = _active;
     }
 
-    function setTierThresholds(uint256[] calldata _tiers, uint256[] calldata _thresholds) external onlyAdmin {
+    function setTierThresholds(uint256[] calldata _tiers, uint256[] calldata _thresholds) external onlyOwner {
         uint256 len = _tiers.length;
         for (uint256 i = 0; i < len; ++i) {
             tierThresholds[_tiers[i]] = _thresholds[i];
@@ -201,7 +201,7 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
     function setTokenBoostDecayRatios(
         uint256[] calldata _tokenIds,
         uint256[] calldata _boostDecayRatios
-    ) external onlyAdmin {
+    ) external onlyOwner {
         uint256 len = _tokenIds.length;
         for (uint256 i = 0; i < len; ++i) {
             tokenBoostDecayRatios[_tokenIds[i]] = _boostDecayRatios[i];
