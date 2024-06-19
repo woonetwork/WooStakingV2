@@ -38,7 +38,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { RewardNFT, NftBooster, NFTBoosterV2, RewardCampaignManager } from "../../typechain";
 import RewardNFTArtifact from "../../artifacts/contracts/RewardNFT.sol/RewardNFT.json";
 import NftBoosterArtifact from "../../artifacts/contracts/rewarders/NftBooster.sol/NftBooster.json";
-import NftBoosterV2Artifact from "../../artifacts/contracts/rewarders/NftBoosterV2.sol/NftBoosterV2.json";
+import NftBoosterV2Artifact from "../../artifacts/contracts/rewarders/NFTBoosterV2.sol/NFTBoosterV2.json";
 import RewardCampaignManagerArtifact from "../../artifacts/contracts/RewardCampaignManager.sol/RewardCampaignManager.json";
 
 
