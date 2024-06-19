@@ -126,7 +126,7 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
         return interfaceId == type(IERC1155Receiver).interfaceId;
     }
 
-    function boostRatio(address _user) external view returns (uint256 compoundRatio) {
+    function boostRatio(address _user) external view returns (uint256 compoundRatio, uint256[3] memory stakeTokenIds) {
         uint256 len = userStakeShortTokens[_user].length;
         uint256 userTier = getUserTier(_user);
         compoundRatio = base;
@@ -140,6 +140,7 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
             uint256 accBoostDecayRatio = (base - tokenBoostDecayRatios[tokenId]) ** (userTier - 1);
             uint256 ratioAfterDecay = (ratio * accBoostDecayRatio) / (base ** (userTier - 1));
             compoundRatio = (compoundRatio * ratioAfterDecay) / base;
+            stakeTokenIds[i] = tokenId;
         }
     }
 
