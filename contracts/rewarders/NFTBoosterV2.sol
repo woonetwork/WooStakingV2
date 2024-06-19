@@ -145,7 +145,7 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
     function getUserTier(address _user) public view returns (uint256 userTier) {
         uint256 wooBal = stakingManager.wooBalance(_user);
         for (uint256 i = tierCount; i > 0; --i) {
-            if (wooBal >= tierThreshold[i]) {
+            if (wooBal >= tierThresholds[i]) {
                 return i;
             }
         }
