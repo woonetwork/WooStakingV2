@@ -65,8 +65,9 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
     // tokenId => boostDecayRate
     mapping(uint256 => uint256) public tokenBoostDecayRatios;
 
-    constructor(address _stakedNFT) {
+    constructor(address _stakedNFT, address _stakingManager) {
         stakedNFT = IRewardNFT(_stakedNFT);
+        stakingManager = IWooStakingManager(_stakingManager);
         base = 10000;
         isActiveBucket[0] = true;
 
@@ -157,6 +158,10 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
 
     function setStakedNFT(address _stakedNFT) external onlyAdmin {
         stakedNFT = IRewardNFT(_stakedNFT);
+    }
+
+    function setStakingManager(address _stakingManager) external onlyAdmin {
+        stakingManager = IWooStakingManager(_stakingManager);
     }
 
     function setBase(uint256 _base) external onlyAdmin {

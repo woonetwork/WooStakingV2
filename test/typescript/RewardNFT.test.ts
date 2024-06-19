@@ -35,12 +35,13 @@ import { ethers } from "hardhat";
 import { deployContract } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-import { RewardNFT, NftBooster, NFTBoosterV2, RewardCampaignManager } from "../../typechain";
+import { RewardNFT, NftBooster, NFTBoosterV2, RewardCampaignManager, WooStakingManager } from "../../typechain";
 import RewardNFTArtifact from "../../artifacts/contracts/RewardNFT.sol/RewardNFT.json";
 import NftBoosterArtifact from "../../artifacts/contracts/rewarders/NftBooster.sol/NftBooster.json";
 import NftBoosterV2Artifact from "../../artifacts/contracts/rewarders/NFTBoosterV2.sol/NFTBoosterV2.json";
 import RewardCampaignManagerArtifact from "../../artifacts/contracts/RewardCampaignManager.sol/RewardCampaignManager.json";
-
+import WooStakingManagerArtifact from "../../artifacts/contracts/WooStakingManager.sol/WooStakingManager.json";
+import TestTokenArtifact from "../../artifacts/contracts/test/TestToken.sol/TestToken.json";
 
 
 describe("RewardNFT tests", () => {
@@ -48,6 +49,7 @@ describe("RewardNFT tests", () => {
     let owner: SignerWithAddress;
 
     let rewardNFT: RewardNFT;
+    let stakingManager: WooStakingManager;
     let nftBooster: NftBooster;
     let nftBoosterV2: NFTBoosterV2;
     let campaignManager: RewardCampaignManager;
@@ -56,6 +58,7 @@ describe("RewardNFT tests", () => {
     let user2: SignerWithAddress;
     let user3: SignerWithAddress;
 
+    let wooToken: Contract;
     let usdcToken: Contract;
     let campaignId = 1;
 
@@ -72,8 +75,10 @@ describe("RewardNFT tests", () => {
             [rewardNFT.address]) as RewardCampaignManager;
         await campaignManager.addCampaign(campaignId);
         await rewardNFT.setCampaignManager(campaignManager.address);
+        wooToken = await deployContract(owner, TestTokenArtifact, []);
+        stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [wooToken.address])) as WooStakingManager;
         nftBooster = (await deployContract(owner, NftBoosterArtifact, [rewardNFT.address])) as NftBooster;
-        nftBoosterV2 = (await deployContract(owner, NftBoosterV2Artifact, [rewardNFT.address])) as NftBoosterV2;
+        nftBoosterV2 = (await deployContract(owner, NftBoosterV2Artifact, [rewardNFT.address, stakingManager.address])) as NFTBoosterV2;
     });
 
     it("NftBooster Tests", async() => {
