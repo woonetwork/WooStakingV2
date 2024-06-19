@@ -12,4 +12,6 @@ interface INFTBoosterV2 {
     function stakeShortNFT(uint256 _tokenId, uint256 _index) external;
 
     function boostRatio(address _user) external view returns (uint256 compoundRatio);
+
+    function getUserTier(address _user) external view returns (uint256 userTier);
 }
