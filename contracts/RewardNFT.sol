@@ -50,33 +50,34 @@ contract RewardNFT is IRewardNFT, ERC1155, BaseAdminOperation {
     uint256 public constant RARE = 2;
     uint256 public constant EPIC = 3;
 
-    uint256[] public nftTypes;
-    mapping(uint256 => bool) public burnables;
-
     address public campaignManager;
+
+    uint256[] public tokenIds;
+    mapping(uint256 => bool) public burnables;
 
     mapping(uint256 => string) private baseURIs;
 
     constructor() ERC1155("") {
-        _addNFTType(UNCOMMON, true);
-        _addNFTType(RARE, true);
-        _addNFTType(EPIC, true);
+        _addTokenId(UNCOMMON, true);
+        _addTokenId(RARE, true);
+        _addTokenId(EPIC, true);
     }
 
     // --------------------- Business Functions --------------------- //
 
-    function mint(address _user, uint256 _nftType, uint256 _amount) external {
+    function mint(address _user, uint256 _tokenId, uint256 _amount) external {
         require(msg.sender == campaignManager, "RewardNFT: !campaignManager");
-        _mint(_user, _nftType, _amount, "");
+        _mint(_user, _tokenId, _amount, "");
     }
 
-    function getAllNFTTypes() external view returns (uint256[] memory) {
-        return nftTypes;
+    function getAllTokenIds() external view returns (uint256[] memory) {
+        return tokenIds;
     }
 
     function uri(uint256 _tokenId) public view override returns (string memory) {
-        for (uint256 i = 0; i < nftTypes.length; i += 1) {
-            if (_tokenId <= nftTypes[i]) {
+        uint256 len = tokenIds.length;
+        for (uint256 i = 0; i < len; i += 1) {
+            if (_tokenId == tokenIds[i]) {
                 return string(abi.encodePacked(baseURIs[_tokenId], _tokenId.toString()));
             }
         }
@@ -84,41 +85,44 @@ contract RewardNFT is IRewardNFT, ERC1155, BaseAdminOperation {
         return "";
     }
 
-    function _addNFTType(uint256 _nftType, bool _burnable) internal {
+    function _addTokenId(uint256 _tokenId, bool _burnable) internal {
         bool exist = false;
-        for (uint256 i = 0; i < nftTypes.length; i++) {
-            if (nftTypes[i] == _nftType) {
+        uint256 len = tokenIds.length;
+        for (uint256 i = 0; i < len; i++) {
+            if (tokenIds[i] == _tokenId) {
                 exist = true;
                 break;
             }
         }
-        require(exist == false, "RewardNFT: !_nftType");
-        nftTypes.push(_nftType);
-        burnables[_nftType] = _burnable;
+        require(exist == false, "RewardNFT: !_tokenId");
+        tokenIds.push(_tokenId);
+        burnables[_tokenId] = _burnable;
     }
 
     // --------------------- Admin Functions --------------------- //
 
-    function batchAirdrop(address[] memory _users, uint256 _nftType, uint256 _amount) external onlyAdmin {
+    function batchAirdrop(address[] memory _users, uint256 _tokenId, uint256 _amount) external onlyAdmin {
         uint256 len = _users.length;
         for (uint256 i = 0; i < len; ++i) {
-            _mint(_users[i], _nftType, _amount, "");
+            _mint(_users[i], _tokenId, _amount, "");
         }
-    }
-
-    function setBaseURI(uint256 _tokenId, string memory _baseURI) external onlyAdmin {
-        baseURIs[_tokenId] = _baseURI;
-    }
-
-    function addNFTType(uint256 _nftType, bool _burnable) external onlyOwner {
-        _addNFTType(_nftType, _burnable);
-    }
-
-    function setBurnable(uint256 _nftType, bool _burnable) external onlyOwner {
-        burnables[_nftType] = _burnable;
     }
 
     function setCampaignManager(address _campaignManager) external onlyOwner {
         campaignManager = _campaignManager;
+    }
+
+    function addTokenId(uint256 _tokenId, bool _burnable) external onlyOwner {
+        _addTokenId(_tokenId, _burnable);
+    }
+
+    function setBurnable(uint256 _tokenId, bool _burnable) external onlyOwner {
+        burnables[_tokenId] = _burnable;
+    }
+
+    function setBaseURI(uint256 _tokenId, string memory _baseURI) external onlyAdmin {
+        baseURIs[_tokenId] = _baseURI;
+
+        emit URI(string(abi.encodePacked(_baseURI, _tokenId.toString())), _tokenId);
     }
 }

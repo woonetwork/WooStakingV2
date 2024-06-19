@@ -103,7 +103,7 @@ contract NftBooster is IERC1155Receiver, BaseAdminOperation {
         uint256 last_token_id = lastStakeTokenIds[_user];
         require(last_token_id == _tokenId, "NftBooster: !tokenId");
         RewardNFT nftContract = RewardNFT(stakedNft);
-        require(nftContract.burnable(_tokenId) == false, "NftBooster: burnableNft");
+        require(nftContract.burnables(_tokenId) == false, "NftBooster: burnableNft");
         nftContract.safeTransferFrom(address(this), _user, _tokenId, 1, "0x0");
         delete lastStakeTokenIds[msg.sender];
         lastStakeTs[msg.sender] = 0;
