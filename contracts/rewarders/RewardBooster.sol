@@ -137,6 +137,10 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
         }
     }
 
+    function getUserStakeTokenIds(address _user) external view returns (uint256[3] memory) {
+        return userBoostRatioDetail[_user].stakeTokenIds;
+    }
+
     function setMPRewarder(address _rewarder) external onlyAdmin {
         mpRewarder = IRewarder(_rewarder);
         emit SetMPRewarder(_rewarder);

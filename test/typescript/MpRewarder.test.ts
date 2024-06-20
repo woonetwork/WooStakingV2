@@ -148,6 +148,11 @@ describe("MpRewarder tests", () => {
         expect(pending3).to.be.gt(0);
         expect(weight3).to.be.eq(weight1);
         expect(weight3).to.be.lt(weight2);
+
+        await booster.userBoostRatioDetail(user1.address);
+        let stakeTokenIds = await booster.getUserStakeTokenIds(user1.address);
+        expect(stakeTokenIds[0]).to.be.eq(0);
+
     });
 
     async function _logUserBals() {
