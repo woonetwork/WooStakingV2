@@ -65,6 +65,10 @@ contract RewardCampaignManager is IRewardCampaignManager, BaseAdminOperation {
         return _claim(_campaignId, msg.sender);
     }
 
+    function isClaimable(uint256 _campaignId, uint256 _tokenId, address _user) external view returns (bool) {
+        return users[_campaignId][_tokenId].contains(_user) && !isClaimedUser[_campaignId][_tokenId][_user];
+    }
+
     function isClaimed(uint256 _campaignId, uint256 _tokenId, address _user) external view returns (bool) {
         return isClaimedUser[_campaignId][_tokenId][_user];
     }
