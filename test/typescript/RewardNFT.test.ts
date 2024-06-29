@@ -68,7 +68,7 @@ describe("RewardNFT tests", () => {
         user2 = signers[3];
         user3 = signers[4];
 
-        rewardNFT = await deployContract(owner, RewardNFTArtifact, []) as RewardNFT;
+        rewardNFT = await deployContract(owner, RewardNFTArtifact, ["BoosterTest", "WooNFT001"]) as RewardNFT;
         campaignManager = await deployContract(owner, RewardCampaignManagerArtifact,
             [rewardNFT.address]) as RewardCampaignManager;
         await campaignManager.addCampaign(campaignId);

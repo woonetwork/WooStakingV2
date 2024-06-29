@@ -73,7 +73,7 @@ describe("MpRewarder tests", () => {
 
         mpRewarder = (await deployContract(owner, MpRewarderArtifact, [stakingManager.address])) as MpRewarder;
         
-        rewardNFT = await deployContract(owner, RewardNFTArtifact, []) as RewardNFT;
+        rewardNFT = await deployContract(owner, RewardNFTArtifact, ["BoosterTest", "WooNFT001"]) as RewardNFT;
         nftBooster = (await deployContract(owner, NFTBoosterV2Artifact, [rewardNFT.address, stakingManager.address])) as NFTBoosterV2;
         booster = (await deployContract(owner, RewardBoosterArtifact, [mpRewarder.address, compounder.address, nftBooster.address])) as RewardBooster;
         await mpRewarder.setBooster(booster.address);

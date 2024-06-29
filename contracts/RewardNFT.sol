@@ -35,6 +35,8 @@ pragma solidity ^0.8.4;
 */
 
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -42,7 +44,27 @@ import {BaseAdminOperation} from "./BaseAdminOperation.sol";
 
 import {IRewardNFT} from "./interfaces/IRewardNFT.sol";
 
-contract RewardNFT is IRewardNFT, ERC1155, BaseAdminOperation {
+interface IERC2981Royalties {
+    function royaltyInfo(
+        uint256 _tokenId,
+        uint256 _value
+    ) external view returns (address _receiver, uint256 _royaltyAmount);
+}
+
+/// @dev This is a contract used to add ERC2981 support to ERC721 and 1155
+abstract contract ERC2981Base is ERC165, IERC2981Royalties {
+    struct RoyaltyInfo {
+        address recipient;
+        uint24 amount;
+    }
+
+    /// @inheritdoc ERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165) returns (bool) {
+        return interfaceId == type(IERC2981Royalties).interfaceId || super.supportsInterface(interfaceId);
+    }
+}
+
+contract RewardNFT is IRewardNFT, ERC1155, BaseAdminOperation, ERC2981Base {
     using EnumerableSet for EnumerableSet.AddressSet;
     using Strings for uint256;
 
@@ -57,13 +79,28 @@ contract RewardNFT is IRewardNFT, ERC1155, BaseAdminOperation {
 
     mapping(uint256 => string) private baseURIs;
 
-    constructor() ERC1155("") {
+    RoyaltyInfo private _royalties;
+    string public name;
+    string public symbol;
+
+    constructor(string memory _name, string memory _symbol) ERC1155("") {
+        name = _name;
+        symbol = _symbol;
         _addTokenId(UNCOMMON, true);
         _addTokenId(RARE, true);
         _addTokenId(EPIC, true);
     }
 
     // --------------------- Business Functions --------------------- //
+
+    function royaltyInfo(
+        uint256,
+        uint256 value
+    ) external view override returns (address receiver, uint256 royaltyAmount) {
+        RoyaltyInfo memory royalties = _royalties;
+        receiver = royalties.recipient;
+        royaltyAmount = (value * royalties.amount) / 10000;
+    }
 
     function mint(address _user, uint256 _tokenId, uint256 _amount) external {
         require(msg.sender == campaignManager, "RewardNFT: !campaignManager");
@@ -124,5 +161,25 @@ contract RewardNFT is IRewardNFT, ERC1155, BaseAdminOperation {
         baseURIs[_tokenId] = _baseURI;
 
         emit URI(string(abi.encodePacked(_baseURI, _tokenId.toString())), _tokenId);
+    }
+
+    function setSymbol(string memory _symbol) external onlyAdmin {
+        symbol = _symbol;
+    }
+
+    function setName(string memory _name) external onlyAdmin {
+        name = _name;
+    }
+
+    function setRoyalties(address recipient, uint256 amount) external onlyAdmin {
+        // Amount is in basis points so 10000 = 100% , 100 = 1% etc
+        require(amount <= 10000, "RewardNFT: RoyaltyTooHigh");
+        _royalties = RoyaltyInfo(recipient, uint24(amount));
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC1155, ERC2981Base, IERC165) returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }
