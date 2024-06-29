@@ -220,7 +220,7 @@ async function tempSetUserRatios() {
     wooStakingProxy,
     wooStakingLocal,
   ] = await getContracts();
-  await booster.setUserRatios([constants.user2], [false], [false]);
+  await booster.setUserRatios([constants.user2], [false], [false], [100]);
   await sleep(constants.sleepSeconds);
   console.log("booster setUserRatios for user: %s", constants.user2);
 }

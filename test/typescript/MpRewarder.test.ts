@@ -134,11 +134,11 @@ describe("MpRewarder tests", () => {
 
         let pending1 = await mpRewarder.pendingReward(user1.address);
         expect(pending1).to.be.gt(0);
-        await booster.setUserRatios([user1.address], [true], [false]);
+        await booster.setUserRatios([user1.address], [true], [false], [100]);
         const weight2 = await mpRewarder.weight(user1.address);
         let pending2 = await mpRewarder.pendingReward(user1.address);
 
-        await booster.setUserRatios([user1.address], [false], [false]);
+        await booster.setUserRatios([user1.address], [false], [false], [100]);
         const weight3 = await mpRewarder.weight(user1.address);
         let pending3 = await mpRewarder.pendingReward(user1.address);
         // console.log("weight1: %s weight2: %s weight3: %s",
