@@ -51,6 +51,10 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
     // only applied to controller chain
     uint256 public autoCompoundBR;
 
+    uint256 public mpWooBR1;
+    uint256 public mpWooBR2;
+    uint256 public mpWooBR3;
+
     mapping(address => uint256) public boostRatio;
 
     struct UserBoostRatioDetail {
@@ -58,6 +62,7 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
         uint256 tvlRatio;
         uint256 autoCompoundRatio;
         uint256 nftRatio;
+        uint256 mpWooRatio;
         uint256 userTier;
         uint256[3] stakeTokenIds;
     }
@@ -76,33 +81,29 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
         volumeBR = 13000; // 130%
         tvlBR = 13000; // 130%
         autoCompoundBR = 15000; // 150%
+        mpWooBR1 = 3000; // 30%
+        mpWooBR2 = 5000; // 50%
+        mpWooBR3 = 0; // 0%
         mpRewarder = IRewarder(_mpRewarder);
         compounder = IWooStakingCompounder(_compounder);
         nftBooster = INFTBoosterV2(_nftBooster);
     }
 
-    function setUserRatios(address[] memory users, bool[] memory volFlags, bool[] memory tvlFlags) external onlyAdmin {
-        uint256 nftRatio;
-        uint256[3] memory stakeTokenIds;
+    function setUserRatios(
+        address[] memory users,
+        bool[] memory volFlags,
+        bool[] memory tvlFlags,
+        uint256[] memory mpWooRatios
+    ) external onlyAdmin {
+        uint256 ratio;
+        UserBoostRatioDetail memory ratioDetail;
         unchecked {
             for (uint256 i = 0; i < users.length; ++i) {
                 address _user = users[i];
                 mpRewarder.updateRewardForUser(_user); // settle the reward for prevous boost ratios
-                (nftRatio, stakeTokenIds) = nftBooster.boostRatio(_user);
-                UserBoostRatioDetail memory item = UserBoostRatioDetail({
-                    volRatio: volFlags[i] ? volumeBR : base,
-                    tvlRatio: tvlFlags[i] ? tvlBR : base,
-                    autoCompoundRatio: compounder.contains(_user) ? autoCompoundBR : base,
-                    nftRatio: nftRatio,
-                    userTier: nftBooster.getUserTier(_user),
-                    stakeTokenIds: stakeTokenIds
-                });
-                boostRatio[_user] =
-                    (item.volRatio * item.tvlRatio * item.nftRatio * item.autoCompoundRatio) /
-                    base /
-                    base /
-                    nftBooster.base();
-                userBoostRatioDetail[_user] = item;
+                (ratio, ratioDetail) = _calculate_ratio(_user, volFlags[i], tvlFlags[i], mpWooRatios[i]);
+                userBoostRatioDetail[_user] = ratioDetail;
+                boostRatio[_user] = ratio;
                 mpRewarder.clearRewardToDebt(_user);
             }
         }
@@ -111,30 +112,54 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
     function migrateUserRatios(
         address[] memory users,
         bool[] memory volFlags,
-        bool[] memory tvlFlags
+        bool[] memory tvlFlags,
+        uint256[] memory mpWooRatios
     ) external onlyAdmin {
-        uint256 nftRatio;
-        uint256[3] memory stakeTokenIds;
+        uint256 ratio;
+        UserBoostRatioDetail memory ratioDetail;
         unchecked {
             for (uint256 i = 0; i < users.length; ++i) {
                 address _user = users[i];
-                (nftRatio, stakeTokenIds) = nftBooster.boostRatio(_user);
-                UserBoostRatioDetail memory item = UserBoostRatioDetail({
-                    volRatio: volFlags[i] ? volumeBR : base,
-                    tvlRatio: tvlFlags[i] ? tvlBR : base,
-                    autoCompoundRatio: compounder.contains(_user) ? autoCompoundBR : base,
-                    nftRatio: nftRatio,
-                    userTier: nftBooster.getUserTier(_user),
-                    stakeTokenIds: stakeTokenIds
-                });
-                boostRatio[_user] =
-                    (item.volRatio * item.tvlRatio * item.nftRatio * item.autoCompoundRatio) /
-                    base /
-                    base /
-                    nftBooster.base();
-                userBoostRatioDetail[_user] = item;
+                (ratio, ratioDetail) = _calculate_ratio(_user, volFlags[i], tvlFlags[i], mpWooRatios[i]);
+                userBoostRatioDetail[_user] = ratioDetail;
+                boostRatio[_user] = ratio;
             }
         }
+    }
+
+    function _calculate_ratio(
+        address _user,
+        bool _volFlag,
+        bool _tvlFlag,
+        uint256 _mpWooRatio
+    ) internal returns (uint256 ratio, UserBoostRatioDetail memory ratioDetail) {
+        uint256 nftRatio;
+        uint256[3] memory stakeTokenIds;
+        (nftRatio, stakeTokenIds) = nftBooster.boostRatio(_user);
+        UserBoostRatioDetail memory item = UserBoostRatioDetail({
+            volRatio: _volFlag ? volumeBR : base,
+            tvlRatio: _tvlFlag ? tvlBR : base,
+            autoCompoundRatio: compounder.contains(_user) ? autoCompoundBR : base,
+            nftRatio: nftRatio,
+            mpWooRatio: _mpWooRatio,
+            userTier: nftBooster.getUserTier(_user),
+            stakeTokenIds: stakeTokenIds
+        });
+        ratio =
+            (item.volRatio * item.tvlRatio * item.nftRatio * item.autoCompoundRatio) /
+            base /
+            base /
+            nftBooster.base();
+        if (item.mpWooRatio >= 15000) {
+            ratio = (ratio * mpWooBR1) / base;
+        }
+        if (item.mpWooRatio >= 10000) {
+            ratio = (ratio * mpWooBR2) / base;
+        }
+        if (item.mpWooRatio >= 5000 && !_volFlag && !_tvlFlag && !compounder.contains(_user)) {
+            ratio = (ratio * mpWooBR3) / base;
+        }
+        ratioDetail = item;
     }
 
     function getUserStakeTokenIds(address _user) external view returns (uint256[3] memory) {
@@ -164,6 +189,12 @@ contract RewardBooster is IRewardBooster, BaseAdminOperation {
     function setTvlBR(uint256 _br) external onlyAdmin {
         tvlBR = _br;
         emit SetTvlBR(_br);
+    }
+
+    function setMPWooBR(uint256 _br1, uint256 _br2, uint256 _br3) external onlyAdmin {
+        mpWooBR1 = _br1;
+        mpWooBR2 = _br2;
+        mpWooBR3 = _br3;
     }
 
     function setAutoCompoundBR(uint256 _br) external onlyAdmin {
