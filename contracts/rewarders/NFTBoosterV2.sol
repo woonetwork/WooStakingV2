@@ -113,12 +113,12 @@ contract NFTBoosterV2 is INFTBoosterV2, IERC1155Receiver, BaseAdminOperation {
         return this.onERC1155BatchReceived.selector;
     }
 
-    function stakeShortNFT(uint256 _tokenId, uint256 _index) external {
+    function stakeAndBurn(uint256 _tokenId, uint256 _index) external {
         address user = msg.sender;
         require(isActiveBucket[_index], "NFTBooster: !activeBucket");
         require(_index < userStakeShortTokens[user].length, "NFTBooster: !largeBucket");
         require(stakeTokenTTLs[_tokenId] > 0, "NFTBooster: !tokenId");
-        stakedNFT.safeTransferFrom(user, address(this), _tokenId, 1, "");
+        stakedNFT.burn(user, _tokenId, 1);
         userStakeShortTokens[user][_index] = StakeShortToken(_tokenId, block.timestamp);
     }
 

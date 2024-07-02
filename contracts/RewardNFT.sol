@@ -73,6 +73,7 @@ contract RewardNFT is IRewardNFT, ERC1155, BaseAdminOperation, ERC2981Base {
     uint256 public constant EPIC = 3;
 
     address public campaignManager;
+    address public nftBooster;
 
     uint256[] public tokenIds;
     mapping(uint256 => bool) public burnables;
@@ -105,6 +106,11 @@ contract RewardNFT is IRewardNFT, ERC1155, BaseAdminOperation, ERC2981Base {
     function mint(address _user, uint256 _tokenId, uint256 _amount) external {
         require(msg.sender == campaignManager, "RewardNFT: !campaignManager");
         _mint(_user, _tokenId, _amount, "");
+    }
+
+    function burn(address _user, uint256 _tokenId, uint256 _amount) external {
+        require(msg.sender == nftBooster, "RewardNFT: !nftBooster");
+        _burn(_user, _tokenId, _amount);
     }
 
     function getAllTokenIds() external view returns (uint256[] memory) {
@@ -143,6 +149,10 @@ contract RewardNFT is IRewardNFT, ERC1155, BaseAdminOperation, ERC2981Base {
         for (uint256 i = 0; i < len; ++i) {
             _mint(_users[i], _tokenId, _amount, "");
         }
+    }
+
+    function setNFTBooster(address _nftBooster) external onlyOwner {
+        nftBooster = _nftBooster;
     }
 
     function setCampaignManager(address _campaignManager) external onlyOwner {
