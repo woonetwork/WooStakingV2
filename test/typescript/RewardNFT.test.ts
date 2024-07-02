@@ -76,6 +76,7 @@ describe("RewardNFT tests", () => {
         wooToken = await deployContract(owner, TestTokenArtifact, []);
         stakingManager = (await deployContract(owner, WooStakingManagerArtifact, [wooToken.address])) as WooStakingManager;
         nftBoosterV2 = (await deployContract(owner, NFTBoosterV2Artifact, [rewardNFT.address, stakingManager.address])) as NFTBoosterV2;
+        await rewardNFT.setNFTBooster(nftBoosterV2.address);
     });
 
     it("NFTBoosterV2 Test1", async() => {
@@ -85,10 +86,10 @@ describe("RewardNFT tests", () => {
         await campaignManager["claim(uint256,address)"](campaignId, owner.address);
 
         await rewardNFT.setApprovalForAll(nftBoosterV2.address, true);
-        await nftBoosterV2.stakeShortNFT(nftType, bucket);
+        await nftBoosterV2.stakeAndBurn(nftType, bucket);
 
         let boosterBalance = await rewardNFT.balanceOf(nftBoosterV2.address, nftType);
-        expect(boosterBalance).to.be.equal(1);
+        expect(boosterBalance).to.be.equal(0);
 
         let [boosterRatio, stakeTokenIds] = await nftBoosterV2.boostRatio(owner.address);
         // console.log("boosterRatio: %s stakeTokenIds: %s", boosterRatio, stakeTokenIds);
@@ -107,10 +108,10 @@ describe("RewardNFT tests", () => {
         await campaignManager["claim(uint256,address)"](campaignId, owner.address);
 
         await rewardNFT.setApprovalForAll(nftBoosterV2.address, true);
-        await nftBoosterV2.stakeShortNFT(nftType, 0);
+        await nftBoosterV2.stakeAndBurn(nftType, 0);
 
         let boosterBalance = await rewardNFT.balanceOf(nftBoosterV2.address, nftType);
-        expect(boosterBalance).to.be.equal(1);
+        expect(boosterBalance).to.be.equal(0);
 
         await nftBoosterV2.setBoostRatios([nftType], [11000]);
         let [boosterRatio, _] = await nftBoosterV2.boostRatio(owner.address);
@@ -121,7 +122,7 @@ describe("RewardNFT tests", () => {
         await campaignManager.addUsers(campaign2, nftType, [owner.address]);
         await campaignManager["claim(uint256,address)"](campaign2, owner.address);
         await nftBoosterV2.setActiveBucket(1, true);
-        await nftBoosterV2.stakeShortNFT(nftType, 1);
+        await nftBoosterV2.stakeAndBurn(nftType, 1);
 
         [boosterRatio, _] = await nftBoosterV2.boostRatio(owner.address);
         // console.log("boosterRatio: %s", boosterRatio);
@@ -132,7 +133,7 @@ describe("RewardNFT tests", () => {
         await campaignManager.addUsers(campaign3, nftType, [owner.address]);
         await campaignManager["claim(uint256,address)"](campaign3, owner.address);
         await nftBoosterV2.setActiveBucket(2, true);
-        await nftBoosterV2.stakeShortNFT(nftType, 2);
+        await nftBoosterV2.stakeAndBurn(nftType, 2);
         [boosterRatio, _] = await nftBoosterV2.boostRatio(owner.address);
         // console.log("boosterRatio: %s", boosterRatio);
         expect(boosterRatio).to.be.equal(13310);
